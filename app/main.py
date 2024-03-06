@@ -5,12 +5,14 @@ from app.database.engine import SessionLocal
 from app.config import BOT_TOKEN, REDIS_URL
 from app.redis.client import get_redis_storage
 from app.database.engine import initialize_db
-from app.routers.user_router import user_router
+from app.routers.user_router import user_router, setup_router
+
 
 
 async def main():
     # Initialize bot and dispatcher
     bot = Bot(token=BOT_TOKEN)
+    setup_router(bot)
     storage = await get_redis_storage()
     dp = Dispatcher(storage=storage)
 
