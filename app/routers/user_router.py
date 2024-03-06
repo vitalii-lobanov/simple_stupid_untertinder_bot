@@ -8,6 +8,7 @@ from app.handlers.tg_commands import set_ready_to_chat, set_not_ready_to_chat, c
 from app.handlers.tg_commands import cmd_unregister, message_reaction_handler, cmd_hard_unregister
 from aiogram import Dispatcher, types
 
+
 bot_instance = None
 
 def setup_router(bot):
@@ -31,9 +32,7 @@ async def set_user_not_ready_to_chat(message: types.Message):
 
 
 # Registration command handler
-@user_router.message(Command(commands=['register']))
-async def cmd_user_register(message: types.Message, state: FSMContext):
-    await cmd_register(message, state)
+
 
 @user_router.message(Command(commands=['unregister']))
 async def cmd_user_unregister(message: types.Message, state: FSMContext):
@@ -48,7 +47,9 @@ async def cmd_user_start(message: types.Message):
 async def cmd_user_hard_unregister(message: types.Message):
     await cmd_hard_unregister(message)
 
-
+@user_router.message(Command(commands=['register']))
+async def cmd_user_register(message: types.Message, state: FSMContext):
+    await cmd_register(message, state)
 
 #Default handler for all other messages
 @user_router.message_reaction()

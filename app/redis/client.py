@@ -1,6 +1,7 @@
 from aiogram.fsm.storage.redis import RedisStorage
-from aioredis import Redis, from_url
+
 from app.config import REDIS_URL
+
 
 
 async def get_redis_storage() -> RedisStorage:
