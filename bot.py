@@ -2,7 +2,7 @@ import asyncio
 from aiogram import Bot, Dispatcher, Router
 from config import BOT_TOKEN
 from models import initialize_db
-from handlers import register_handlers, router
+from handlers import  router
 from storage import get_redis_storage
 
 
@@ -14,9 +14,6 @@ async def main():
 
     # Initialize database
     initialize_db()
-
-    # Register handlers
-    register_handlers(router)
 
     # Include the router in the dispatcher
     dp.include_router(router)
