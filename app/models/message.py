@@ -2,7 +2,12 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, LargeBinary
 from sqlalchemy.orm import relationship
 from app.database.engine import Base
-
+from sqlalchemy import Column, Integer, ForeignKey, String, LargeBinary
+from sqlalchemy.orm import relationship
+from app.database.engine import Base
+from app.utils.debug import logger
+# Import User class
+from app.models.user import User
 
 class Message(Base):
     __tablename__ = 'messages'

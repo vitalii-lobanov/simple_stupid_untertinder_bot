@@ -1,4 +1,5 @@
 # app/main.py
+from app.utils.debug import logger
 import asyncio
 from aiogram import Bot, Dispatcher
 from app.database.engine import SessionLocal

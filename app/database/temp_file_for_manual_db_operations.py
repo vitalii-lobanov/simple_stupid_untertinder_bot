@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, text
 from app.config import DATABASE_URI
+from app.utils.debug import logger
 # Assuming DATABASE_URI is your SQLite database URI
 engine = create_engine(DATABASE_URI)
 

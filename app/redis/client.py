@@ -1,5 +1,6 @@
 from aiogram.fsm.storage.redis import RedisStorage
-
+from aioredis import Redis
+from app.utils.debug import logger
 from app.config import REDIS_URL
 
 
