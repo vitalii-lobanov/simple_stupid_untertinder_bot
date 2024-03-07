@@ -138,7 +138,7 @@ async def cmd_unregister(message: types.Message):
 async def cmd_hard_unregister(message: types.Message):
 
     user_id = message.from_user.id
-    print(f"Trying to unregister user: {user_id}")
+    logger.debug(f"Trying to unregister user: {user_id}")
     # Create a new database session
     session = SessionLocal()
     try:
