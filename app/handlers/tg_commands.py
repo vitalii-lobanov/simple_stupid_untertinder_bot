@@ -7,7 +7,9 @@ from app.database.engine import SessionLocal
 from app.states import RegistrationStates
 from app.models.user import User
 from app.utils.debug import logger
+from aiogram import types
 
+from app.states import CommonStates
 
 # Define user status constants
 USER_STATUS_READY_TO_CHAT = "ready_to_chat"
@@ -47,7 +49,7 @@ async def set_not_ready_to_chat(message: types.Message):
 
 # Registration command handler
 
-#TODO: Maybe move somewhere else
+# TODO: Maybe move somewhere else
 async def cmd_register_start(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     username = message.from_user.username
@@ -62,6 +64,8 @@ async def cmd_register_start(message: types.Message, state: FSMContext):
                 await state.update_data(message_count=0)
                 await message.answer(
                     "You have been re-registered. Please send 10 messages to complete your registration.")
+                await state.set_state(CommonStates.default)
+
             else:
                 # User is already active, no need to change state
                 await message.answer("You are already registered.")
@@ -75,7 +79,7 @@ async def cmd_register_start(message: types.Message, state: FSMContext):
             await message.answer("You have been registered. Please send 10 messages to complete your registration.")
     except Exception as e:
         session.rollback()
-        await state.clear()  # Clear the state in case of failure
+        await state.set_state(CommonStates.default)
         await message.answer("Registration failed.")
         logger.critical(str(e))  # Log the exception or handle it as necessary
     finally:
@@ -98,6 +102,8 @@ async def handle_receiving_messages_on_registration(message: types.Message, stat
                 existing_user.is_active = True
                 session.commit()
                 await message.answer("Congratulations, your registration is now complete!")
+                # Set the state to default after successful registration
+                await state.set_state(CommonStates.default)
             else:
                 await message.answer("Unexpected error during registration completion. Please contact support.")
         except Exception as e:
@@ -106,7 +112,9 @@ async def handle_receiving_messages_on_registration(message: types.Message, stat
             logger.critical(str(e))  # Log the exception
         finally:
             session.close()
-            await state.clear()  # Clear the state after registration is complete or fails
+            await state.set_state(CommonStates.default)
+
+
 
 async def cmd_unregister(message: types.Message):
     user_id = message.from_user.id
@@ -130,8 +138,8 @@ async def cmd_unregister(message: types.Message):
     finally:
         session.close()
 
-async def cmd_hard_unregister(message: types.Message):
 
+async def cmd_hard_unregister(message: types.Message):
     user_id = message.from_user.id
     logger.debug(f"Trying to unregister user: {user_id}")
     # Create a new database session
@@ -157,11 +165,14 @@ async def cmd_hard_unregister(message: types.Message):
     finally:
         session.close()
 
-async def cmd_start(message: types.Message):
+
+async def cmd_start(message: types.Message, state: FSMContext):
+    await state.set_state(CommonStates.default)
     await message.answer("Welcome! Use /register to sign up and /start_chatting to begin chatting with someone.")
 
-async def  message_reaction_handler(message_reaction: types.MessageReactionUpdated):
-    #TODO: store all the messages sent by bot in DB, check whether this message is in DB to determine the sender: user or bot
+
+async def message_reaction_handler(message_reaction: types.MessageReactionUpdated):
+    # TODO: store all the messages sent by bot in DB, check whether this message is in DB to determine the sender: user or bot
     try:
         logger.debug("Emoji: ", message_reaction.new_reaction[0].emoji)
     except:
