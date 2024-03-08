@@ -14,11 +14,6 @@ USER_STATUS_READY_TO_CHAT = "ready_to_chat"
 USER_STATUS_NOT_READY_TO_CHAT = "not_ready_to_chat"
 
 
-# Define states for registration
-class RegistrationStates(StatesGroup):
-    waiting_for_messages = State()
-
-
 async def handle_user_messages(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
     message_count = user_data.get('message_count', 0)
