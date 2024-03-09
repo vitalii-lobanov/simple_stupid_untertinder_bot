@@ -23,7 +23,7 @@ def initialize_db():
         logger.info("Initializing the database...")
 
         # Import all models modules here to ensure they are known to Base
-        from app.models import User, Message
+        from app.models import User, ProfileDataTieredMessage
 
         logger.info("Models imported successfully.")
 

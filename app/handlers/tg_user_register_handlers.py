@@ -5,6 +5,7 @@ from app.models.user import User
 from aiogram import types
 from app.states import CommonStates
 from app.utils.debug import logger
+from app.models import ProfileDataTieredMessage
 
 
 # This function will create a new user instance in the database and initiate the message receiving state.
@@ -74,22 +75,77 @@ async def ask_user_to_send_messages_to_fill_profile(message: types.Message, stat
 
 async def receiving_messages_on_registration_handler(message: types.Message, state: FSMContext):
     message_count = await increment_message_count(message, state)
+    await save_registration_message(message.from_user.id, message.text)
     await check_message_threshold(message, state, message_count)
 
 
-# This function will check if the user is already registered or not and initiate the registration process if necessary.
-async def start_registration_handler(message: types.Message, state: FSMContext):
-    user_id = message.from_user.id
+# Inside tg_user_register_handlers.py or a similar handlers file
+
+async def save_registration_message(user_id: int, message_text: str):
     session = SessionLocal()
     try:
-        existing_user = session.query(User).filter_by(id=user_id).first()
-        if existing_user and not existing_user.is_active:
-            await ask_user_to_send_messages_to_fill_profile(message, state)
-        elif existing_user:
-            await message.answer("You are already registered.")
-        else:
-            await create_new_registration(message, state, user_id, message.from_user.username)
+        # Create a new Message instance
+        new_message = ProfileDataTieredMessage(user_id=user_id, text=message_text)
+        # Add it to the session and commit to save in the database
+        session.add(new_message)
+        session.commit()
     except Exception as e:
-        await registration_failed(message, state, e)
+        session.rollback()
+        logger.critical(f"Failed to save message: {e}")
     finally:
         session.close()
+
+
+# This function will check if the user is already registered or not and initiate the registration process if necessary.
+# async def start_registration_handler(message: types.Message, state: FSMContext):
+#     user_id = message.from_user.id
+#     session = SessionLocal()
+#     try:
+#         existing_user = session.query(User).filter_by(id=user_id).first()
+#
+#         if existing_user and not existing_user.is_active:
+#             await ask_user_to_send_messages_to_fill_profile(message, state)
+#         elif existing_user:
+#             await message.answer("You are already registered.")
+#         else:
+#             await create_new_registration(message, state, user_id, message.from_user.username)
+#     except Exception as e:
+#         await registration_failed(message, state, e)
+#     finally:
+#         session.close()
+
+
+async def start_registration_handler(message: types.Message, state: FSMContext):
+    user_id = message.from_user.id
+    with SessionLocal() as session:
+        try:
+            existing_user = session.query(User).filter_by(id=user_id).first()
+            # Check if user is already registered
+            if existing_user:
+                # Check if the user has the required number of profile messages
+                profile_messages_count = session.query(ProfileDataTieredMessage).filter_by(user_id=user_id).count()
+
+                if existing_user.is_active and profile_messages_count == 10:
+                    # Notify the active user with the complete profile that their existing messages will be used
+                    await message.answer(
+                        "You have already created a profile and your existing messages will be used. "
+                        "If you want to create a new profile, please use /hard_unregister command."
+                    )
+                elif not existing_user.is_active:
+                    # Handle reactivation or continuation of registration for inactive users
+                    # await ask_user_to_send_messages_to_fill_profile(message, state)
+                    # Or reactivate the user and notify them accordingly
+                    existing_user.is_active = True
+                    session.commit()
+                    await message.answer("Your profile has been reactivated.")
+                else:
+                    # The user is active but doesn't have 10 messages, proceed with message collection
+                    await ask_user_to_send_messages_to_fill_profile(message, state)
+            else:
+                # User is not registered, start new registration
+                await create_new_registration(message, state, user_id, message.from_user.username)
+
+        except Exception as e:
+            await registration_failed(message, state, e)
+        finally:
+            session.close()

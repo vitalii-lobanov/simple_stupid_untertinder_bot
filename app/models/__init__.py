@@ -4,7 +4,7 @@ from app.utils.debug import logger
 
 from app.models.base import Base
 from app.models.user import User
-from app.models.message import Message
+from app.models.profile_data_tiered_message import ProfileDataTieredMessage
 
 # Define cross-model relationships here if needed
-User.messages = relationship('Message', order_by=Message.id, back_populates='user')
+User.profile_data_tiered_messages = relationship('ProfileDataTieredMessage', order_by=ProfileDataTieredMessage.id, back_populates='user')

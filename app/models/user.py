@@ -9,4 +9,4 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True)
     is_active = Column(Boolean, default=True)  # Add this line
-    #messages = relationship('Message', back_populates='user')
+    profile_data_tiered_messages = relationship('ProfileDataTieredMessage', back_populates='user')

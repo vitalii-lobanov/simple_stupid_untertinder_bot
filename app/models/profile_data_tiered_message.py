@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, ForeignKey, String, Text, LargeBinary
 from sqlalchemy.orm import relationship
 from app.models.base import Base
-class Message(Base):
-    __tablename__ = 'messages'
+class ProfileDataTieredMessage(Base):
+    __tablename__ = 'profile_data_tiered_messages'
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
@@ -12,7 +12,7 @@ class Message(Base):
     image = Column(LargeBinary)  # For image files
 
     # Define relationships
-    user = relationship('User', back_populates='messages')
+    user = relationship('User', back_populates='profile_data_tiered_messages')
     # Add more fields as necessary for reactions, etc.
 
 

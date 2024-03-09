@@ -9,7 +9,6 @@ from app.database.engine import initialize_db
 from app.routers.user_router import user_router, setup_router
 
 
-
 async def main():
     # Initialize bot and dispatcher
     bot = Bot(token=BOT_TOKEN)

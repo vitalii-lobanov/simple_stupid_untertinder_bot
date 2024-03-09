@@ -6,9 +6,10 @@ from aiogram.fsm.context import FSMContext
 from app.handlers.tg_commands import cmd_start
 
 from app.handlers.tg_commands import message_reaction_handler
-from app.handlers.tg_user_unregistration_hendlers import cmd_unregister
-from app.handlers.tg_user_registration_handlers import start_registration_handler
-from app.handlers.tg_user_registration_handlers import receiving_messages_on_registration_handler
+from app.handlers.tg_user_unregister_handlers import cmd_unregister
+from app.handlers.tg_user_register_handlers import start_registration_handler
+from app.handlers.tg_user_register_handlers import receiving_messages_on_registration_handler
+from app.handlers.tg_user_unregister_handlers import cmd_hard_unregister
 
 
 from aiogram import Dispatcher, types
