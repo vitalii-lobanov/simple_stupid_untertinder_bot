@@ -33,22 +33,47 @@ async def send_tiered_message_to_user(bot_instance, user_id: int, tier: int):
 
             # Handle non-media types separately
             # These types cannot be part of a media group and should be sent as separate messages
+            # if tiered_message.sticker is not None:
+            #     await bot_instance.send_sticker(user_id, sticker=tiered_message.sticker)
+                
             if tiered_message.sticker is not None:
-                await bot_instance.send_sticker(user_id, sticker=tiered_message.sticker)
+                if tiered_message.original_sender_id is not None:
+                    message_text = f"Forwarded from @{tiered_message.original_sender_username}"
+                    await bot_instance.send_message(chat_id=user_id, text=message_text)
+                await bot_instance.send_sticker(user_id, sticker=tiered_message.sticker)    
+                
             if tiered_message.poll is not None:
                 await bot_instance.send_poll(user_id, **tiered_message.poll)  # Assuming poll is a dict with poll options
 
             # If there's a media group, send it
             if media_group:
-                await bot_instance.send_media_group(user_id, media_group)
+                await bot_instance.send_media_group(user_id, media_group)           
+            elif tiered_message.photo is not None:
+                await bot_instance.send_photo(user_id, photo=tiered_message.photo, caption=caption)
+            elif tiered_message.video is not None:
+                    await bot_instance.send_video(user_id, video=tiered_message.video, caption=caption)
             elif tiered_message.document is not None:
-                await bot_instance.send_document(user_id, document=tiered_message.document)
+                message_caption = tiered_message.caption
+                if tiered_message.original_sender_id is not None:
+                    message_caption = f"Forwarded from @{tiered_message.original_sender_username}\n\n{message_caption}"
+                await bot_instance.send_document(user_id, document=tiered_message.document, caption=message_caption)
+                    
+#                    await bot_instance.send_document(user_id, document=tiered_message.document, caption=caption)                        
             elif tiered_message.text:
-                # If there's only text, send a text message
-                await bot_instance.send_message(
-                    chat_id=user_id,
-                    text=tiered_message.text,
-                    entities=tiered_message.entities  # Assuming this is a list of MessageEntity objects
+                #We send forwarded message
+                if tiered_message.original_sender_id is not None:
+                    message_text = f"Forwarded from @{tiered_message.original_sender_username}\n\n{tiered_message.text}"
+                    await bot_instance.send_message(
+                        chat_id=user_id,
+                        text=message_text,
+                        entities=tiered_message.entities  
+                    )
+                else:
+                    
+                    await bot_instance.send_message(
+                        chat_id=user_id,
+                        text=tiered_message.text,
+                        entities=tiered_message.entities  
                 )
 
         else:

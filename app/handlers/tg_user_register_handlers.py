@@ -191,8 +191,7 @@ def message_entities_to_dict(entities):
             'length': entity.length,
             'url': entity.url,
             'user': entity.user.to_dict() if entity.user else None,
-            'language': entity.language,
-          
+            'language': entity.language,          
         }
         for entity in entities
     ] if entities else None
@@ -247,7 +246,8 @@ async def save_registration_message(message: types.Message, message_count: int):
             link_preview_options=link_preview_options_to_dict(message.link_preview_options) if message.link_preview_options else None,
             md_text=message.md_text if message.md_text else None,
             media_group_id=message.media_group_id if message.media_group_id else None,
-
+            original_sender_id=message.forward_from.id if message.forward_from else None,
+            original_sender_username=message.forward_from.username if message.forward_from else None,
             photo=photo if photo else None, 
             poll=message.poll  if message.poll else None,
             quote=message.quote if message.quote else None,          

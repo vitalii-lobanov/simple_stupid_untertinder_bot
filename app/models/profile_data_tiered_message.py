@@ -44,6 +44,8 @@ class ProfileDataTieredMessage(Base):
     voice = Column(LargeBinary)
     video_note = Column(LargeBinary)
     video = Column(LargeBinary)
+    original_sender_id = Column(Integer)  # Assuming Telegram user IDs are integers
+    original_sender_username = Column(String)  # Assuming Telegram usernames are strings
 
 
     # Relationship to the User model
