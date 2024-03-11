@@ -7,8 +7,9 @@ from states import CommonStates
 from utils.debug import logger
 from models import ProfileDataTieredMessage
 from aiogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAudio, InputMediaDocument
+from tasks import celery_app
 
-
+@celery_app.task
 async def send_tiered_message_to_user(bot_instance, user_id: int, tier: int):
     session = SessionLocal()
     try:
@@ -41,7 +42,7 @@ async def send_tiered_message_to_user(bot_instance, user_id: int, tier: int):
                     message_text = f"Forwarded from @{tiered_message.original_sender_username}"
                     await bot_instance.send_message(chat_id=user_id, text=message_text)
                 await bot_instance.send_sticker(user_id, sticker=tiered_message.sticker)    
-                
+
             if tiered_message.poll is not None:
                 await bot_instance.send_poll(user_id, **tiered_message.poll)  # Assuming poll is a dict with poll options
 
