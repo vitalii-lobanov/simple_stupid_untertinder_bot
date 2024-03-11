@@ -1,1 +1,1 @@
-from app.utils.debug import logger
+from utils.debug import logger

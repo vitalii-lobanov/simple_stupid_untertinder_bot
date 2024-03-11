@@ -1,14 +1,14 @@
 from aiogram import Bot, Router, types
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
-from app.services.user_service import add_user_to_database, get_user_status, update_user_status
+from services.user_service import add_user_to_database, get_user_status, update_user_status
 from aiogram import types
-from app.database.engine import SessionLocal
-from app.states import RegistrationStates
-from app.models.user import User
-from app.utils.debug import logger
+from database.engine import SessionLocal
+from states import RegistrationStates
+from models.user import User
+from utils.debug import logger
 from aiogram import types
-from app.states import CommonStates
+from states import CommonStates
 
 
 
@@ -21,6 +21,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
 async def message_reaction_handler(message_reaction: types.MessageReactionUpdated):
     # TODO: store all the messages sent by bot in DB, check whether this message is in DB to determine the sender: user or bot
     try:
-        logger.debug("Emoji: ", message_reaction.new_reaction[0].emoji)
+        #logger.debug("Emoji: ", message_reaction.new_reaction[0].emoji)
+        pass
     except:
-        logger.debug("Emoji: ", message_reaction.new_reaction.emoji)
+       # logger.debug("Emoji: ", message_reaction.new_reaction.emoji)
+        pass

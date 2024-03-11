@@ -3,24 +3,24 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
-from app.handlers.tg_commands import cmd_start
+from handlers.tg_commands import cmd_start
 
-from app.handlers.tg_commands import message_reaction_handler
-from app.handlers.tg_user_unregister_handlers import cmd_unregister
-from app.handlers.tg_user_register_handlers import start_registration_handler
-from app.handlers.tg_user_register_handlers import receiving_messages_on_registration_handler
-from app.handlers.tg_user_unregister_handlers import cmd_hard_unregister
+from handlers.tg_commands import message_reaction_handler
+from handlers.tg_user_unregister_handlers import cmd_unregister
+from handlers.tg_user_register_handlers import start_registration_handler
+from handlers.tg_user_register_handlers import receiving_messages_on_registration_handler
+from handlers.tg_user_unregister_handlers import cmd_hard_unregister
 
 
 from aiogram import Dispatcher, types
-from app.states import RegistrationStates
-from app.utils.debug import logger
+from states import RegistrationStates
+from utils.debug import logger
 # registration_handlers.py
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import any_state
 from aiogram.filters import Command
-from app.filters.custom_filters import InStateFilter
+from filters.custom_filters import InStateFilter
 
 bot_instance = None
 

@@ -1,6 +1,6 @@
-from app.database.engine import SessionLocal
-from app.models.user import User
-from app.utils.debug import logger
+from database.engine import SessionLocal
+from models.user import User
+from utils.debug import logger
 from aiogram import types
 
 

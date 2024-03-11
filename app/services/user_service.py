@@ -1,7 +1,7 @@
 # app/services/user_service.py
-from app.models.user import User
-from app.database.engine import get_db_session
-from app.utils.debug import logger
+from models.user import User
+from database.engine import get_db_session
+from utils.debug import logger
 
 def add_user_to_database(user_id, user_status):
     session = get_db_session()
@@ -17,8 +17,8 @@ def add_user_to_database(user_id, user_status):
 
 # app/services/user_service.py
 from sqlalchemy.orm import Session
-from app.models.user import User
-from app.database.engine import get_db_session
+from models.user import User
+from database.engine import get_db_session
 
 def get_user_status(user_id: int) -> str:
     session: Session = get_db_session()

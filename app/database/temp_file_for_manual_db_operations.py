@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, declarative_base
-from app.config import DATABASE_URI
+from config import DATABASE_URI
 
 Base = declarative_base()
 

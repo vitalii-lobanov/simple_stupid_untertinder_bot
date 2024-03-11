@@ -1,11 +1,12 @@
+
 from aiogram.fsm.context import FSMContext
-from app.database.engine import SessionLocal
-from app.states import RegistrationStates
-from app.models.user import User
+from database.engine import SessionLocal
+from states import RegistrationStates
+from models.user import User
 from aiogram import types
-from app.states import CommonStates
-from app.utils.debug import logger
-from app.models import ProfileDataTieredMessage
+from states import CommonStates
+from utils.debug import logger
+from models import ProfileDataTieredMessage
 
 
 # This function will create a new user instance in the database and initiate the message receiving state.
@@ -75,18 +76,46 @@ async def ask_user_to_send_messages_to_fill_profile(message: types.Message, stat
 
 async def receiving_messages_on_registration_handler(message: types.Message, state: FSMContext):
     message_count = await increment_message_count(message, state)
-    await save_registration_message(message.from_user.id, message.text)
+    await save_registration_message(message)
     await check_message_threshold(message, state, message_count)
 
 
 # Inside tg_user_register_handlers.py or a similar handlers file
 
-async def save_registration_message(user_id: int, message_text: str):
+async def save_registration_message(message: types.Message):
+    user_id = message.from_user.id
     session = SessionLocal()
     try:
-        # Create a new Message instance
-        new_message = ProfileDataTieredMessage(user_id=user_id, text=message_text)
-        # Add it to the session and commit to save in the database
+        new_message = ProfileDataTieredMessage(
+            user_id=user_id,
+            text=message.text or None,
+            audio=message.audio or None,
+            video=message.video or None,            
+            document=message.document or None,            
+            animation=message.animation or None,
+            author_signature=message.author_signature or None,
+            caption=message.caption or None,
+            caption_entities=message.caption_entities or None,
+            contact=message.contact or None,
+            forward_date=message.forward_date or None,
+            from_user= str(message.from_user).encode() or None,
+            game=message.game or None,
+            dice=message.dice or None,
+            entities=message.entities or None,
+            html_text=message.html_text or None,
+            invoice=message.invoice or None,
+            location=message.location or None,
+            link_preview_options=message.link_preview_options or None,
+            md_text=message.md_text or None,
+            media_group_id=message.media_group_id or None,
+            photo=message.photo or None,
+            poll=message.poll or None,
+            quote=message.quote or None,
+            sticker=message.sticker or None,
+            story=message.story or None,
+            voice=message.voice or None,
+            video_note=message.video_note or None
+        )
         session.add(new_message)
         session.commit()
     except Exception as e:

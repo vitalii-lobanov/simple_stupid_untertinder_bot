@@ -1,12 +1,13 @@
 # app/main.py
-from app.utils.debug import logger
+from utils.debug import logger
 import asyncio
 from aiogram import Bot, Dispatcher
-from app.database.engine import SessionLocal
-from app.config import BOT_TOKEN, REDIS_URL
-from app.redis.client import get_redis_storage
-from app.database.engine import initialize_db
-from app.routers.user_router import user_router, setup_router
+from database.engine import SessionLocal
+from config import BOT_TOKEN, REDIS_URL
+from redis_helper_utils.client import get_redis_storage
+from database.engine import initialize_db
+from routers.user_router import user_router, setup_router
+
 
 
 async def main():
@@ -21,10 +22,11 @@ async def main():
 
     # Include the router in the dispatcher
     dp.include_router(user_router)
-
+    
     # Start the bot
     await dp.start_polling(bot)
 
 
 if __name__ == '__main__':
     asyncio.run(main())
+    
