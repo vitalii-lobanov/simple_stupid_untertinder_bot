@@ -45,7 +45,11 @@ async def send_tiered_message_to_user(bot_instance, user_id: int, tier: int):
                 await bot_instance.send_document(user_id, document=tiered_message.document)
             elif tiered_message.text:
                 # If there's only text, send a text message
-                await bot_instance.send_message(user_id, tiered_message.text)
+                await bot_instance.send_message(
+                    chat_id=user_id,
+                    text=tiered_message.text,
+                    entities=tiered_message.entities  # Assuming this is a list of MessageEntity objects
+                )
 
         else:
             await bot_instance.send_message(user_id, "No message found for the specified tier.")

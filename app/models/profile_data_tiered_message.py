@@ -38,7 +38,7 @@ class ProfileDataTieredMessage(Base):
     photo = Column(JSON)
     poll = Column(JSON)
     quote = Column(JSON)
-    sticker = Column(JSON)
+    sticker = Column(LargeBinary)
     story = Column(JSON)
     text = Column(String)
     voice = Column(LargeBinary)

@@ -183,6 +183,32 @@ async def receiving_messages_on_registration_handler(message: types.Message, sta
 #         session.close()
 
 
+def message_entities_to_dict(entities):
+    return [
+        {
+            'type': entity.type,
+            'offset': entity.offset,
+            'length': entity.length,
+            'url': entity.url,
+            'user': entity.user.to_dict() if entity.user else None,
+            'language': entity.language,
+          
+        }
+        for entity in entities
+    ] if entities else None
+
+def link_preview_options_to_dict(link_preview_options):
+    if link_preview_options is not None:
+        # Ensure that is_disabled is assigned a boolean value, not an instance of `Default`
+        is_disabled = link_preview_options.is_disabled if isinstance(link_preview_options.is_disabled, bool) else False
+        # Ensure that all other fields are also handled similarly and assigned non-Default values
+        return {
+            'is_disabled': is_disabled,
+            'url': link_preview_options.url if isinstance(link_preview_options.url, str) else None,
+            # ... include other fields that you want to store, with similar checks
+        }
+    return None
+
 async def save_registration_message(message: types.Message, message_count: int):
     user_id = message.from_user.id
     session = SessionLocal()
@@ -203,26 +229,28 @@ async def save_registration_message(message: types.Message, message_count: int):
             video= message.video.file_id.encode("utf-8") if message.video else None, 
             document=message.document.file_id.encode("utf-8") if message.document else None,
             animation=message.animation.file_id.encode("utf-8") if message.animation else None,
+            sticker=message.sticker.file_id.encode("utf-8") if message.sticker else None,
             author_signature=message.author_signature if message.author_signature else None,
             caption=message.caption if message.caption else None,
-            caption_entities=message.caption_entities if message.caption_entities else None,
+            #caption_entities=message.caption_entities if message.caption_entities else None,
+            #entities=message.entities if message.entities else None,
+            caption_entities=message_entities_to_dict(message.caption_entities) if message.caption_entities else None,
+            entities=message_entities_to_dict(message.entities) if message.entities else None,
             contact=message.contact if message.contact else None,
             forward_date=message.forward_date if message.forward_date else None,
             from_user= str(message.from_user).encode() if message.from_user else None,
             game=message.game if message.game else None,
             dice=message.dice if message.dice else None,
-            entities=message.entities if message.entities else None,
             html_text=message.html_text if  message.html_text else None,
             invoice=message.invoice if message.invoice else None,
             location=message.location if message.location else None,
-            link_preview_options=message.link_preview_options if message.link_preview_options else None,
+            link_preview_options=link_preview_options_to_dict(message.link_preview_options) if message.link_preview_options else None,
             md_text=message.md_text if message.md_text else None,
             media_group_id=message.media_group_id if message.media_group_id else None,
 
             photo=photo if photo else None, 
             poll=message.poll  if message.poll else None,
-            quote=message.quote if message.quote else None,
-            sticker=message.sticker if message.sticker else None,
+            quote=message.quote if message.quote else None,          
             story=message.story if message.story else None,
             voice=message.voice if message.voice else None,
             video_note=message.video_note if message.video_note else None
