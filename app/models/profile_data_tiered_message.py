@@ -9,6 +9,7 @@ class ProfileDataTieredMessage(Base):
     # Assuming 'id' is intended to be the primary key
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
+    tier = Column(Integer)
     text = Column(String)
     audio = Column(LargeBinary)
     video = Column(LargeBinary)
