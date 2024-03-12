@@ -10,7 +10,6 @@ class CommonStates(StatesGroup):
     default = State()  # The default state for general bot interactions
 
 class UserStates(StatesGroup):
-    
     not_ready_to_chat = State()
     ready_to_chat = State()
-    
+    chatting_in_progress= State()

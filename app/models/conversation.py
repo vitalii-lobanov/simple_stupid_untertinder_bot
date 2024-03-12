@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from models.base import Base
 
@@ -9,7 +9,7 @@ class Conversation(Base):
     user2_id = Column(Integer, ForeignKey('users.id'))
     start_time = Column(DateTime)
     end_time = Column(DateTime, nullable=True)
-    
+    is_active = Column(Boolean, default=True, nullable=False)
     user1 = relationship('User', foreign_keys=[user1_id])
     user2 = relationship('User', foreign_keys=[user2_id])
     

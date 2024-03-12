@@ -11,6 +11,7 @@ from handlers.tg_user_register_handlers import start_registration_handler
 from handlers.tg_user_register_handlers import receiving_messages_on_registration_handler
 from handlers.tg_user_unregister_handlers import cmd_hard_unregister
 
+from handlers.tg_chatting_handlers import user_start_chatting, state_user_is_ready_to_chat_handler
 
 from aiogram import Dispatcher, types
 from states import RegistrationStates
@@ -23,6 +24,8 @@ from aiogram.filters import Command
 from filters.custom_filters import InStateFilter
 from handlers.tg_user_staging import send_tiered_message_to_user
 
+from states import UserStates
+
 bot_instance = None
 
 # Custom filter for registration process
@@ -30,7 +33,8 @@ bot_instance = None
 user_is_in_starting_registration_state_filter = InStateFilter(RegistrationStates.starting)
 user_is_in_receiving_messages_during_registration_state_filter = InStateFilter(RegistrationStates.receiving_messages)
 user_is_in_completed_registration_state_filter = InStateFilter(RegistrationStates.completed)
-
+user_is_in_ready_for_chatting_state_filter = InStateFilter(UserStates.ready_for_chatting)
+user_is_in_chatting_in_progress_state_filter = InStateFilter(UserStates.chatting_in_progress)
 
 def setup_router(bot):
     global bot_instance
@@ -84,5 +88,18 @@ async def cmd_user_show_my_profile(message: types.Message):
 
 
 @user_router.message(Command(commands=['start_chatting']))
-async def cmd_user_start_chatting():
+async def cmd_user_start_chatting(message: types.Message, state: FSMContext):    
+    await user_start_chatting(message, state)
+    await state.set_state(UserStates.ready_to_chat)
+
+#The user send '/start_chatting' command
+@user_router.message(user_is_in_ready_for_chatting_state_filter)
+async def state_user_is_ready_to_chat(message: types.Message, state: FSMContext):
+    await state_user_is_ready_to_chat_handler(message, state)
+    
+
+#The user is in a chatting state
+@user_router.message(user_is_in_chatting_in_progress_state_filter)
+async def state_user_is_in_chatting_progress(message: types.Message, state: FSMContext):
+    await state_user_is_in_chatting_progress_handler(message, state)  
     pass
