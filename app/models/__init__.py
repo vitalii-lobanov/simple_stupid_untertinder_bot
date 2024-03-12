@@ -4,6 +4,8 @@ from utils.debug import logger
 
 from models.base import Base
 from models.user import User
+from models.conversation import Conversation
+from models.message import Message
 from models.profile_data_tiered_message import ProfileDataTieredMessage
 
 # Define cross-model relationships here if needed
