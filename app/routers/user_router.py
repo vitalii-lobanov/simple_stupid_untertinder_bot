@@ -43,10 +43,7 @@ user_router = Router()
 async def cmd_user_unregister(message: types.Message, state: FSMContext):
     await cmd_unregister(message)
 
-
-# Handler for user to set status to ready to chat
-
-@user_router.message(Command(commands=['start']))
+@user_router.message(Command(commands=['restart']))
 async def cmd_user_start(message: types.Message):
     logger.debug("'/start' command received")
     await cmd_start(message)
@@ -84,3 +81,8 @@ async def cmd_user_show_my_profile(message: types.Message):
     logger.debug("'/hard_unregister' command received")
     for i in range(0, 9):
         await send_tiered_message_to_user(bot_instance, message.from_user.id, i)
+
+
+@user_router.message(Command(commands=['start_chatting']))
+async def cmd_user_start_chatting():
+    pass

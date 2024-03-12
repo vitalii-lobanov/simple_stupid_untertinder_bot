@@ -8,5 +8,6 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True)
-    is_active = Column(Boolean, default=True)  # Add this line
+    is_active = Column(Boolean, default=True)
+    is_ready_to_chat = Column(Boolean, default=False)
     profile_data_tiered_messages = relationship('ProfileDataTieredMessage', back_populates='user')
