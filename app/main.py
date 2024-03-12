@@ -6,14 +6,15 @@ from database.engine import SessionLocal
 from config import BOT_TOKEN, REDIS_URL
 from redis_helper_utils.client import get_redis_storage
 from database.engine import initialize_db
-from routers.user_router import user_router, setup_router
+from routers.user_router import user_router
+from bot import bot_instance
 
-
+logger.debug("Bot token: {}".format(BOT_TOKEN))
+logger.debug("Redis URL: {}".format(REDIS_URL))
 
 async def main():
     # Initialize bot and dispatcher
-    bot = Bot(token=BOT_TOKEN)
-    setup_router(bot)
+   
     storage = await get_redis_storage()
     dp = Dispatcher(storage=storage)
 
@@ -24,7 +25,7 @@ async def main():
     dp.include_router(user_router)
     
     # Start the bot
-    await dp.start_polling(bot)
+    await dp.start_polling(bot_instance)
 
 
 if __name__ == '__main__':

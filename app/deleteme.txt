@@ -1,18 +1,1 @@
-The conversation_id in the following code block is not defined.
-```Python
-# Step 2: Save the message to the database
-        new_message = Message(
-            sender_id=user_id,
-            conversation_id=conversation_id,  # You need to determine this
-            text=message.text,  # Include other fields based on the Message model
-            # ... Add handling for other message types (photos, videos, etc.)
-        )
-        session.add(new_message)
-        session.commit()
-```
-
-I want to add some modifications to the bot: 
-
-1. Let's add 'is_active' flag in conversations (models.conversation) it should be true by default (the new conversation is being created only if the conversation is active). We will set 'is_active' flag when the conversation ends. 
-
-2. Let's modify the fragment above in @fn:state_user_is_in_chatting_progress()﻿  function. Let's query the database (via the ORM SQLAlchemy if possible) to find all the active sessions and select the one where the user participate. Then get the partner's user id from the session info. The bot will not serve many users, so the performance is not an issue here. 
+But how is recommended to handle the scenarios where we know that the flag in the database may or even should change, but do not know when? In current project it may be for example during users' matching for chatting. Asume, the first user, Alice, sends /start_chatting command and there is no partners for conversation at the moment. Then, the second user, Bob runs /start_chatting command too. The bot handles bob's command but cannot set Alice's context to state chatting_in_progress. What the best practices for such situations?

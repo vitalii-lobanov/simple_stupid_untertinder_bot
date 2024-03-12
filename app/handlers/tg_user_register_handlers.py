@@ -7,7 +7,7 @@ from aiogram import types
 from states import CommonStates, UserStates
 from utils.debug import logger
 from models import ProfileDataTieredMessage
-from tasks import celery_app
+from app.tasks.tasks import celery_app
 
 # This function will create a new user instance in the database and initiate the message receiving state.
 async def create_new_registration(message: types.Message, state: FSMContext, user_id: int, username: str):

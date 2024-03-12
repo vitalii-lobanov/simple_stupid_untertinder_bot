@@ -13,6 +13,7 @@
             "env": {              
                 "TELEGRAM_API_KEY": "6910899160:AAEABnf-OSCV3mA04uNYeYRcJ9_PD69ufZ0",
                 "PYTHONPATH": "${workspaceFolder}/app",
+                "LOG_LEVEL": "DEBUG"
             },
         },
         {

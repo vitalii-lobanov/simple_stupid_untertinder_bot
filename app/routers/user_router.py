@@ -23,8 +23,8 @@ from aiogram.fsm.state import any_state
 from aiogram.filters import Command
 from filters.custom_filters import InStateFilter
 from handlers.tg_user_staging import send_tiered_message_to_user
-from handlers.tg_chatting_handlers import state_user_is_in_chatting_progress_handler
-
+from handlers.tg_chatting_handlers import state_user_is_in_chatting_progress_handler, stop_chatting_command_handler
+from bot import bot_instance
 from states import UserStates
 
 bot_instance = None
@@ -36,10 +36,9 @@ user_is_in_receiving_messages_during_registration_state_filter = InStateFilter(R
 user_is_in_completed_registration_state_filter = InStateFilter(RegistrationStates.completed)
 user_is_in_ready_for_chatting_state_filter = InStateFilter(UserStates.ready_to_chat)
 user_is_in_chatting_in_progress_state_filter = InStateFilter(UserStates.chatting_in_progress)
+user_is_in_not_ready_to_chat_state_filter = InStateFilter(UserStates.not_ready_to_chat)
 
-def setup_router(bot):
-    global bot_instance
-    bot_instance = bot
+
 
 user_router = Router()
 
@@ -90,17 +89,26 @@ async def cmd_user_show_my_profile(message: types.Message):
 
 @user_router.message(Command(commands=['start_chatting']))
 async def cmd_user_start_chatting(message: types.Message, state: FSMContext):    
+    logger.debug("'/start_chatting' command received")
     await user_start_chatting(message, state)
     await state.set_state(UserStates.ready_to_chat)
 
-#The user send '/start_chatting' command
+
 @user_router.message(user_is_in_ready_for_chatting_state_filter)
 async def state_user_is_ready_to_chat(message: types.Message, state: FSMContext):
+    logger.debug("We're inside state_user_is_ready_to_chat")
     await state_user_is_ready_to_chat_handler(message, state)
     
 
 #The user is in a chatting state
 @user_router.message(user_is_in_chatting_in_progress_state_filter)
 async def state_user_is_in_chatting_progress(message: types.Message, state: FSMContext):
+    logger.debug("We're inside state_user_is_in_chatting_progress")
     await state_user_is_in_chatting_progress_handler(message, state)  
     
+
+@user_router.message(Command(commands=['stop_chatting']))
+async def cmd_user_stop_chatting(message: types.Message, state: FSMContext):
+    logger.debug("'/stop_chatting' command received")
+    await state.set_state(UserStates.not_ready_to_chat)    
+    await stop_chatting_command_handler(message, state, True)
