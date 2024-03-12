@@ -23,6 +23,7 @@ from aiogram.fsm.state import any_state
 from aiogram.filters import Command
 from filters.custom_filters import InStateFilter
 from handlers.tg_user_staging import send_tiered_message_to_user
+from handlers.tg_chatting_handlers import state_user_is_in_chatting_progress_handler
 
 from states import UserStates
 
@@ -33,7 +34,7 @@ bot_instance = None
 user_is_in_starting_registration_state_filter = InStateFilter(RegistrationStates.starting)
 user_is_in_receiving_messages_during_registration_state_filter = InStateFilter(RegistrationStates.receiving_messages)
 user_is_in_completed_registration_state_filter = InStateFilter(RegistrationStates.completed)
-user_is_in_ready_for_chatting_state_filter = InStateFilter(UserStates.ready_for_chatting)
+user_is_in_ready_for_chatting_state_filter = InStateFilter(UserStates.ready_to_chat)
 user_is_in_chatting_in_progress_state_filter = InStateFilter(UserStates.chatting_in_progress)
 
 def setup_router(bot):
@@ -102,4 +103,4 @@ async def state_user_is_ready_to_chat(message: types.Message, state: FSMContext)
 @user_router.message(user_is_in_chatting_in_progress_state_filter)
 async def state_user_is_in_chatting_progress(message: types.Message, state: FSMContext):
     await state_user_is_in_chatting_progress_handler(message, state)  
-    pass
+    

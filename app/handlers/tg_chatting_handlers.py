@@ -80,7 +80,7 @@ async def state_user_is_ready_to_chat_handler(message: types.Message, state: FSM
     finally:
         session.close()
 
-async def state_user_is_in_chatting_progress(message: types.Message, state: FSMContext):
+async def state_user_is_in_chatting_progress_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     session = SessionLocal()
 
