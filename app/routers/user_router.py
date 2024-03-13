@@ -11,7 +11,7 @@ from handlers.tg_user_register_handlers import start_registration_handler
 from handlers.tg_user_register_handlers import receiving_messages_on_registration_handler
 from handlers.tg_user_unregister_handlers import cmd_hard_unregister
 
-from handlers.tg_chatting_handlers import user_start_chatting, state_user_is_ready_to_chat_handler
+from handlers.tg_chatting_handlers import user_start_chatting #, state_user_is_ready_to_chat_handler
 
 from aiogram import Dispatcher, types
 from states import RegistrationStates
@@ -92,7 +92,7 @@ async def cmd_user_show_my_profile(message: types.Message):
 async def cmd_user_start_chatting(message: types.Message, state: FSMContext):    
     logger.debug("'/start_chatting' command received")
     await user_start_chatting(message, state)
-    await state.set_state(UserStates.ready_to_chat)
+    #await state.set_state(UserStates.ready_to_chat)
 
 
 @user_router.message(user_is_in_ready_for_chatting_state_filter)
