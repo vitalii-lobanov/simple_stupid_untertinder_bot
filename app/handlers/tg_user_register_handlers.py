@@ -7,7 +7,7 @@ from aiogram import types
 from states import CommonStates, UserStates
 from utils.debug import logger
 from models import ProfileDataTieredMessage
-from app.tasks.tasks import celery_app
+#from app.tasks.tasks import celery_app
 
 # This function will create a new user instance in the database and initiate the message receiving state.
 async def create_new_registration(message: types.Message, state: FSMContext, user_id: int, username: str):
@@ -24,21 +24,21 @@ async def registration_failed(message: types.Message, state: FSMContext, excepti
     await message.answer("Registration failed.")
     logger.critical(str(exception))
 
-@celery_app.task
+
 async def increment_message_count(message: types.Message, state: FSMContext):
     user_data = await state.get_data()
     message_count = user_data.get('message_count', 0) + 1
     await state.update_data(message_count=message_count)
     return message_count
 
-@celery_app.task
+
 async def check_message_threshold(message: types.Message, state: FSMContext, message_count: int):
     if message_count < 10:
         await message.answer(f"Message {message_count} received. {10 - message_count} messages left.")
     else:
         await complete_registration(message, state)
 
-@celery_app.task
+
 async def complete_registration(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     session = SessionLocal()
@@ -56,7 +56,7 @@ async def complete_registration(message: types.Message, state: FSMContext):
         session.close()
         await state.set_state(CommonStates.default)
 
-@celery_app.task
+
 async def handle_registration_error(message: types.Message, state: FSMContext, exception: Exception):
     session = SessionLocal()
     session.rollback()
@@ -65,7 +65,7 @@ async def handle_registration_error(message: types.Message, state: FSMContext, e
     await state.set_state(CommonStates.default)
     session.close()
 
-@celery_app.task
+
 # This function will set the FSM state to RegistrationStates.receiving_messages to start receiving messages from the user.
 async def ask_user_to_send_messages_to_fill_profile(message: types.Message, state: FSMContext):
     await state.set_state(RegistrationStates.receiving_messages)
@@ -73,7 +73,7 @@ async def ask_user_to_send_messages_to_fill_profile(message: types.Message, stat
     logger.debug(f"User {message.from_user.id} has started registration.")
     await message.answer("Please send 10 messages to complete your registration.")
 
-@celery_app.task
+
 async def receiving_messages_on_registration_handler(message: types.Message, state: FSMContext):
     message_count = await increment_message_count(message, state)
     await save_registration_message(message, message_count)
@@ -104,7 +104,7 @@ def link_preview_options_to_dict(link_preview_options):
         }
     return 
 
-@celery_app.task
+
 async def save_registration_message(message: types.Message, message_count: int):
     user_id = message.from_user.id
     session = SessionLocal()
@@ -182,7 +182,7 @@ async def save_registration_message(message: types.Message, message_count: int):
 
 
 
-@celery_app.task
+
 async def start_registration_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     with SessionLocal() as session:

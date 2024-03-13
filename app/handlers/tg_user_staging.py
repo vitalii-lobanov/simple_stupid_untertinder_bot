@@ -7,9 +7,9 @@ from states import CommonStates
 from utils.debug import logger
 from models import ProfileDataTieredMessage
 from aiogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAudio, InputMediaDocument
-from app.tasks.tasks import celery_app
+#from app.tasks.tasks import celery_app
 
-@celery_app.task
+
 async def send_tiered_message_to_user(bot_instance, user_id: int, tier: int):
     session = SessionLocal()
     try:

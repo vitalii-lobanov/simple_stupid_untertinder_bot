@@ -7,7 +7,7 @@ from aiogram import types
 from states import CommonStates, UserStates
 from utils.debug import logger
 from models import ProfileDataTieredMessage
-from app.tasks.tasks import celery_app
+#from app.tasks.tasks import celery_app
 from database.engine import SessionLocal
 from models.user import User
 from models.conversation import Conversation

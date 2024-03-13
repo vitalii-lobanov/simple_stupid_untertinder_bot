@@ -25,7 +25,8 @@ from filters.custom_filters import InStateFilter
 from handlers.tg_user_staging import send_tiered_message_to_user
 from handlers.tg_chatting_handlers import state_user_is_in_chatting_progress_handler, stop_chatting_command_handler
 from bot import bot_instance
-from states import UserStates
+from states import UserStates, CommonStates
+from aiogram.types import ReactionTypeEmoji
 
 bot_instance = None
 
@@ -112,3 +113,19 @@ async def cmd_user_stop_chatting(message: types.Message, state: FSMContext):
     logger.debug("'/stop_chatting' command received")
     await state.set_state(UserStates.not_ready_to_chat)    
     await stop_chatting_command_handler(message, state, True)
+
+@user_router.message(Command(commands=['test']))
+async def  test_delete_me(message: types.Message, state: FSMContext):
+    logger.debug("'/test' command received")
+    await state.set_state(CommonStates.test)
+
+is_in_test_state_filter = InStateFilter(CommonStates.test)
+@user_router.message(is_in_test_state_filter)
+async def  test_delete_me_handler(message: types.Message, state: FSMContext):
+    logger.debug("We'e in test state")
+
+  #  await message.answer('❤️')
+    emoji_reaction = ReactionTypeEmoji(emoji='❤️')
+    await message.react([emoji_reaction])
+    await message.reply("Replying with a heart")
+    await message.answer("Replying with a heart and with an answer")

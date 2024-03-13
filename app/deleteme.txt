@@ -1,1 +1,34 @@
-But how is recommended to handle the scenarios where we know that the flag in the database may or even should change, but do not know when? In current project it may be for example during users' matching for chatting. Asume, the first user, Alice, sends /start_chatting command and there is no partners for conversation at the moment. Then, the second user, Bob runs /start_chatting command too. The bot handles bob's command but cannot set Alice's context to state chatting_in_progress. What the best practices for such situations?
+A question about the FSM in aiogram v 3 or hihger. Can the FSM of the first user, Alice, be changed when the event occurs in the second user's (i.e. Bob) context?
+
+
+n aiogram v3 and higher, FSM contexts are isolated per user and chat by default. However, it is possible to change the FSM state of one user (Alice) based on an event that occurs in another user's (Bob) context, but this requires custom logic to explicitly update the state of a user different from the one who triggered the current event.
+
+To achieve this, you would need a way to access the FSMContext for Alice when handling an event from Bob. This involves manually specifying the user ID and chat ID of Alice's context when setting or getting the FSM state.
+
+Here's how you might implement this:
+
+Identify Alice's UserID and ChatID: You need to know Alice's user ID and, if necessary, the chat ID where the FSM state should be updated.
+Access Alice's FSMContext: Use these identifiers to access and manipulate Alice's FSM state.
+Here's a conceptual example:
+
+from aiogram import Dispatcher
+from aiogram.types import Message
+from aiogram.dispatcher import FSMContext
+
+async def on_bob_event(bob_message: Message, bob_state: FSMContext, dispatcher: Dispatcher):
+    # Assuming you have Alice's user ID and chat ID
+    alice_user_id = ...
+    alice_chat_id = ...
+
+    # Access Alice's FSMContext using her user ID and chat ID
+    alice_context = FSMContext(dispatcher.storage, alice_user_id, alice_chat_id)
+
+    # Change Alice's FSM state
+    await alice_context.set_state(SomeState)
+
+    # Optionally, you can also set/get data associated with Alice's state
+    await alice_context.update_data(some_key="some_value")
+
+    In the above example, when an event from Bob triggers the on_bob_event function, the function accesses Alice's FSMContext and sets her state to SomeState. This is done by creating a new FSMContext instance using Alice's user and chat IDs.
+
+This manual access to another user's FSM context should be done with care to avoid race conditions and ensure data consistency. It's important to understand that directly manipulating another user's context goes against the typical usage pattern of FSM in aiogram, where the state is expected to be managed within the context of a single user's interaction with the bot. However, this technique can be used to implement more complex workflows where the state of one user depends on the actions of another.

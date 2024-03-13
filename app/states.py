@@ -8,6 +8,7 @@ class RegistrationStates(StatesGroup):
 
 class CommonStates(StatesGroup):
     default = State()  # The default state for general bot interactions
+    test = State()
 
 class UserStates(StatesGroup):
     not_ready_to_chat = State()
