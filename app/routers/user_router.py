@@ -78,7 +78,8 @@ async def handle_user_receiving_messages_on_registration(message: types.Message,
 # Default handler for all other messages
 @user_router.message_reaction()
 async def message_user_reaction_handler(message_reaction: types.MessageReactionUpdated):
-    logger.debug("Message reaction handler, all messages are handled here")
+    logger.debug("Message reaction handler...")
+    #if state is UserStates.chatting_in_progress:
     await message_reaction_handler(message_reaction)
 
 @user_router.message(Command(commands=['show_my_profile']))
@@ -95,10 +96,10 @@ async def cmd_user_start_chatting(message: types.Message, state: FSMContext):
     #await state.set_state(UserStates.ready_to_chat)
 
 
-@user_router.message(user_is_in_ready_for_chatting_state_filter)
-async def state_user_is_ready_to_chat(message: types.Message, state: FSMContext):
-    logger.debug("We're inside state_user_is_ready_to_chat")
-    await state_user_is_ready_to_chat_handler(message, state)
+# @user_router.message(user_is_in_ready_for_chatting_state_filter)
+# async def state_user_is_ready_to_chat(message: types.Message, state: FSMContext):
+#     logger.debug("We're inside state_user_is_ready_to_chat")
+#     await state_user_is_ready_to_chat_handler(message, state)
     
 
 #The user is in a chatting state
@@ -107,6 +108,24 @@ async def state_user_is_in_chatting_progress(message: types.Message, state: FSMC
     logger.debug("We're inside state_user_is_in_chatting_progress")
     await state_user_is_in_chatting_progress_handler(message, state)  
     
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#TODO: REMOVE, testing artefacts ==========================
 
 @user_router.message(Command(commands=['stop_chatting']))
 async def cmd_user_stop_chatting(message: types.Message, state: FSMContext):
@@ -123,7 +142,6 @@ is_in_test_state_filter = InStateFilter(CommonStates.test)
 @user_router.message(is_in_test_state_filter)
 async def  test_delete_me_handler(message: types.Message, state: FSMContext):
     logger.debug("We'e in test state")
-
   #  await message.answer('❤️')
     emoji_reaction = ReactionTypeEmoji(emoji='❤️')
     await message.react([emoji_reaction])
