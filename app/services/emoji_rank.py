@@ -1,7 +1,12 @@
-Положительные (в порядке снижения интереса)
+import random
 
+# Temporary implementation. Will be replaced with a semantic-based ranking.
+# List of supported emojis could be found here: 
+# https://docs.aiogram.dev/uk-ua/latest/api/types/reaction_type_emoji.html#aiogram.types.reaction_type_emoji.ReactionTypeEmoji
+class EmojiRank():
+    emojis = {}
+    def __init__(self):
         positive_emojis = {     #            
-{
                                 "❤": (8, 14),
                                 "❤‍🔥": (7, 13),
                                 "💋": (7, 12),
@@ -50,13 +55,10 @@
                                 "👾": (0, 0.5),
                                 "🫡": (0, 0.5),
                                 "😨": (0, 0.5),
-}
+                          }
 
-
-Отрициательные (в порядке снижения интереса)
-
-{
-                                "👎": (-35, -17),
+        negative_emojis = {
+                                 "👎": (-35, -17),
                                 "😡": (-20, -15),
                                 "🤡": (-20, -15),
                                 "🤬": (-20, -15),
@@ -67,10 +69,11 @@
                                 "😐": (-4, -6),
                                 "🤨": (-3, -5),
                                 "💩": (-2, -6),
-}
+                          }
 
-Нейтральные (в порядке снижения интереса)
-{
+
+
+        neutral_emojis = {
                                 "👀": (-0.5, 3),
                                 "🌚": (-1, 3),
                                 "🤯": (-3, 3),
@@ -88,4 +91,32 @@
                                 "🌭": (-1, 1),
                                 "💊": (-1, 1),
                                 "🗿": (-1, 1),
-}
+                          }
+
+        full_emojis_set = {**positive_emojis, **negative_emojis, **neutral_emojis}
+       
+        for emoji in full_emojis_set:
+            self.emojis[emoji] = random.uniform(full_emojis_set[emoji][0], full_emojis_set[emoji][1])        
+
+    def get_rank(self, emoji: str):
+        if emoji in self.emojis:
+            return self.emojis[emoji]
+        else:
+            return None
+
+
+full_emoji_set = ["👍", "👎", "❤", "🔥", "🥰", "👏", "😁", "🤔", "🤯", "😱", 
+                  "🤬", "😢", "🎉", "🤩", "🤮", "💩", "🙏", "👌", "🕊", "🤡", 
+                  "🥱", "🥴", "😍", "🐳", "❤‍🔥", "🌚", "🌭", "💯", "🤣", "⚡", 
+                  "🍌", "🏆", "💔", "🤨", "😐", "🍓", "🍾", "💋", "🖕", "😈", 
+                  "😴", "😭", "🤓", "👻", "👨‍💻", "👀", "🎃", "🙈", "😇", "😨", 
+                  "🤝", "✍", "🤗", "🫡", "🎅", "🎄", "☃", "💅", "🤪", "🗿", 
+                  "🆒", "💘", "🙉", "🦄", "😘", "💊", "🙊", "😎", "👾", "🤷‍♂",
+                  "🤷", "🤷‍♀", "😡"]
+
+ranker = EmojiRank()
+
+
+for emoji in full_emoji_set:
+    print (f"Emoji: {emoji}, rank: {ranker.get_rank(emoji)}")
+
