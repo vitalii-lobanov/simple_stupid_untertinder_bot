@@ -330,6 +330,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
     #     if actual_emoji_reaction == expected_emoji_reaction:
     #         logger.debug("Test heart emoji detected.")
             
+            
     #     pass
     # except Exception as e:
     #     logger.error("An exception occurred while handling the message reaction: " + str(e))
