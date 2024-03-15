@@ -10,6 +10,7 @@ class Message(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     message_source = Column(Enum(MessageSource))
     conversation_id = Column(Integer, ForeignKey('conversations.id'), nullable=True)    
+    reactions = relationship('Reaction', backref='message', foreign_keys='[Reaction.sender_message_id]')
     timestamp = Column(DateTime)  
     tier = Column(Integer)    
     audio = Column(LargeBinary)

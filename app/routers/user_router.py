@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 
 from handlers.tg_commands import cmd_start
 
-from handlers.tg_commands import message_reaction_handler
+from handlers.tg_chatting_handlers import message_reaction_handler
 from handlers.tg_user_unregister_handlers import cmd_unregister
 from handlers.tg_user_register_handlers import start_registration_handler
 from handlers.tg_user_register_handlers import receiving_messages_on_registration_handler

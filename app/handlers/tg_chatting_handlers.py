@@ -1,8 +1,10 @@
 import random
+from datetime import datetime
 
 from aiogram import types
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
+from aiogram.types import ReactionTypeEmoji
 from bot import bot_instance
 
 # from app.tasks.tasks import celery_app
@@ -12,8 +14,7 @@ from models import Conversation, Message
 from models.user import User
 from states import CommonStates, UserStates
 from utils.debug import logger
-
-from datetime import datetime
+from services.dao import save_telegram_message, save_telegram_reaction
 
 # TODO: возможно, во всех случаях Exceptions ставить default_state, причём не только тут.
 
@@ -87,7 +88,7 @@ async def one_more_user_is_ready_to_chat(user_id: int, user_state: FSMContext):
             chat_id=current_user_id,
             text=f"An error occurred in state_user_is_ready_to_chat_handler. Error: {str(e)}",
         )
-        logger.critical(
+        logger.error(
             f"Caught exception in state_user_is_ready_to_chat_handler: {str(e)}"
         )
         await user_state.set_state(CommonStates.default)
@@ -124,7 +125,7 @@ async def user_start_chatting(message: types.Message, state: FSMContext):
         await one_more_user_is_ready_to_chat(user_id, state)
     except Exception as e:
         session.rollback()
-        logger.critical(f"Caught exception in user_start_chatting: {str(e)}")
+        logger.error(f"Caught exception in user_start_chatting: {str(e)}")
     finally:
         session.close()
 
@@ -225,7 +226,7 @@ async def state_user_is_in_chatting_progress_handler(
 
     except Exception as e:
         session.rollback()
-        logger.critical(f"Caught exception in state_user_is_in_chatting_progress: {str(e)}")
+        logger.error(f"Caught exception in state_user_is_in_chatting_progress: {str(e)}")
         # Handle the exception, possibly sending a message back to the user
     finally:
         session.close()
@@ -314,3 +315,45 @@ async def stop_chatting_command_handler(
         )
     finally:
         session.close()
+
+
+async def message_reaction_handler(message_reaction: types.MessageReactionUpdated):
+    # TODO: store all the messages sent by bot in DB, check whether this message is in DB to determine the sender: user or bot
+    # try:
+    #     logger.debug("We're inside message_reaction_handler function.")
+    #     #expected_emoji_reaction = ReactionTypeEmoji(emoji='❤').emoji
+    #     expected_emoji_reaction = ReactionTypeEmoji(emoji='🔥').emoji
+    #     logger.debug("Expected emoji reaction: " + str(expected_emoji_reaction))
+    #     actual_emoji_reaction = message_reaction.new_reaction[0].emoji
+    #     logger.debug("Actual emoji reaction: " + str(actual_emoji_reaction))
+
+    #     if actual_emoji_reaction == expected_emoji_reaction:
+    #         logger.debug("Test heart emoji detected.")
+            
+    #     pass
+    # except Exception as e:
+    #     logger.error("An exception occurred while handling the message reaction: " + str(e))
+    #     pass
+
+    try:
+        
+        # Save the reaction
+        if save_telegram_reaction(
+            user_id=message_reaction.user_id,  
+            sender_message_id=message_reaction.message_id,  
+            new_emoji=message_reaction.new_reaction[0].emoji or None,
+            old_emoji=message_reaction.old_reaction[0].emoji or None,
+            timestamp=message_reaction.timestamp        
+        ):
+            emoji_reaction = ReactionTypeEmoji(message_reaction.new_reaction[0].emoji or message_reaction.old_reaction[0].emoji)
+            
+            #TODO: вот сюда надо дописать поиск сообщения в БД conversation, оттуда брать его ID и обновлять реакцию у второго собеседника по ID сообщенния
+            #TODO: но сначала надо сделать так, чтобы в беседе сохранялись вообще все сообщения, чтобы было, на что реагировать.
+            
+            #            await message.react([emoji_reaction])
+
+        else:
+            pass
+                
+    except Exception as e:
+        logger.error(f"An exception occurred while handling the message reaction: {e}")

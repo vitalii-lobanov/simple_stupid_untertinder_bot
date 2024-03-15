@@ -17,7 +17,7 @@
 #     try:
 #         await bot_instance.send_message(chat_id=user_id, text=message_text)
 #     except Exception as e:
-#         logger.critical(f"Failed to send a message to {user_id}: {str(e)}")
+#         logger.error(f"Failed to send a message to {user_id}: {str(e)}")
 
 
 # @shared_task
@@ -58,7 +58,7 @@
 
 #     except Exception as e:
 #         session.rollback()
-#         logger.critical(f'Caught exception in match_users Celery task: {str(e)}')
+#         logger.error(f'Caught exception in match_users Celery task: {str(e)}')
 #         raise e
 #     finally:
 #         session.close()

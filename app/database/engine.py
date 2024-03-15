@@ -34,7 +34,7 @@ def initialize_db():
 
 
     except Exception as e:
-        logger.critical("Failed to create tables: {}".format(e), exc_info=True)
+        logger.error("Failed to create tables: {}".format(e), exc_info=True)
         raise
 
 def get_db_session():

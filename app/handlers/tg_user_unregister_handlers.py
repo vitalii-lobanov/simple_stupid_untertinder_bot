@@ -21,7 +21,7 @@ async def cmd_unregister(message: types.Message):
     except Exception as e:
         session.rollback()
         await message.answer("Unregistration failed.")
-        logger.critical(str(e))
+        logger.error(str(e))
         # Log the exception or handle it as necessary
     finally:
         session.close()

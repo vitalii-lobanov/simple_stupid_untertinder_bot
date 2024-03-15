@@ -74,6 +74,6 @@ async def send_tiered_message_to_user(bot_instance, user_id: int, tier: int):
         else:
             await bot_instance.send_message(user_id, "No message found for the specified tier.")
     except Exception as e:
-        logger.critical(f"Failed to send tiered message: {e}")
+        logger.error(f"Failed to send tiered message: {e}")
     finally:
         session.close()

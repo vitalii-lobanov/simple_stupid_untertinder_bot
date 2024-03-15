@@ -18,23 +18,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await message.answer("Welcome! Use /register to sign up and /start_chatting to begin chatting with someone.")
 
 
-async def message_reaction_handler(message_reaction: types.MessageReactionUpdated):
-    # TODO: store all the messages sent by bot in DB, check whether this message is in DB to determine the sender: user or bot
-    try:
-        logger.debug("We're inside message_reaction_handler function.")
-        #expected_emoji_reaction = ReactionTypeEmoji(emoji='❤').emoji
-        expected_emoji_reaction = ReactionTypeEmoji(emoji='🔥').emoji
-        logger.debug("Expected emoji reaction: " + str(expected_emoji_reaction))
-        actual_emoji_reaction = message_reaction.new_reaction[0].emoji
-        logger.debug("Actual emoji reaction: " + str(actual_emoji_reaction))
 
-        if actual_emoji_reaction == expected_emoji_reaction:
-            logger.debug("Test heart emoji detected.")
-            
-        pass
-    except Exception as e:
-        logger.critical("An exception occurred while handling the message reaction: " + str(e))
-        pass
 
     #TODO: logger.debud / logging.critical / logging.error — send errors to the user via message in DEBUG mode
     
