@@ -8,7 +8,7 @@ class Conversation(Base):
     user1_id = Column(Integer, ForeignKey('users.id'))
     user2_id = Column(Integer, ForeignKey('users.id'))
     start_time = Column(DateTime)
-    end_time = Column(DateTime, nullable=True)
+    end_time = Column(DateTime, nullable=True, default=None)
     is_active = Column(Boolean, default=True, nullable=False)
     user1 = relationship('User', foreign_keys=[user1_id])
     user2 = relationship('User', foreign_keys=[user2_id])

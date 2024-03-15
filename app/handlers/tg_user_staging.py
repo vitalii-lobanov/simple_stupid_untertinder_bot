@@ -1,20 +1,14 @@
-from aiogram.fsm.context import FSMContext
 from database.engine import SessionLocal
-from states import RegistrationStates
-from models.user import User
 from aiogram import types
-from states import CommonStates
 from utils.debug import logger
-from models import ProfileDataTieredMessage
-from aiogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAudio, InputMediaDocument
-#from app.tasks.tasks import celery_app
+from models.message import Message
 
 
 async def send_tiered_message_to_user(bot_instance, user_id: int, tier: int):
     session = SessionLocal()
     try:
         # Query for the message of the given tier
-        tiered_message = session.query(ProfileDataTieredMessage).filter_by(user_id=user_id, tier=tier).first()
+        tiered_message = session.query(Message).filter_by(user_id=user_id, tier=tier).first()
         caption = tiered_message.caption
         if tiered_message:
             media_group = []

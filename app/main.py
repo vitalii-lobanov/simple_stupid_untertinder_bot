@@ -1,8 +1,6 @@
 # app/main.py
 from utils.debug import logger
 import asyncio
-from aiogram import Bot, Dispatcher
-from database.engine import SessionLocal
 from config import BOT_TOKEN, REDIS_URL
 
 from database.engine import initialize_db

@@ -2,7 +2,7 @@
 import os
 
 from utils.debug import logger
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine
 
 from sqlalchemy.orm import sessionmaker
 from config import DATABASE_URI
@@ -23,7 +23,6 @@ def initialize_db():
         logger.info("Initializing the database...")
 
         # Import all models modules here to ensure they are known to Base
-        from models import User, ProfileDataTieredMessage, Conversation, Message
 
         logger.info("Models imported successfully.")
 

@@ -1,12 +1,11 @@
 from sqlalchemy.orm import relationship
 
-from utils.debug import logger
 
-from models.base import Base
 from models.user import User
 from models.conversation import Conversation
 from models.message import Message
-from models.profile_data_tiered_message import ProfileDataTieredMessage
 
-# Define cross-model relationships here if needed
-User.profile_data_tiered_messages = relationship('ProfileDataTieredMessage', order_by=ProfileDataTieredMessage.id, back_populates='user')
+# If you have additional cross-model relationships to define, do it here
+# For example, if the relationships are not defined within the model classes themselves
+User.messages = relationship('Message', order_by=Message.id, back_populates='user')
+Conversation.messages = relationship('Message', order_by=Message.id, back_populates='conversation')

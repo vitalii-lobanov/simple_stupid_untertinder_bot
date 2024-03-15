@@ -33,7 +33,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
             
         pass
     except Exception as e:
-        logger.debug("An exception occurred while handling the message reaction: " + str(e))
+        logger.critical("An exception occurred while handling the message reaction: " + str(e))
         pass
 
     #TODO: logger.debud / logging.critical / logging.error — send errors to the user via message in DEBUG mode

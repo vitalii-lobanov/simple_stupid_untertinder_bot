@@ -4,15 +4,17 @@ from database.engine import SessionLocal
 from states import RegistrationStates
 from models.user import User
 from aiogram import types
-from states import CommonStates, UserStates
+from states import CommonStates
 from utils.debug import logger
-from models import ProfileDataTieredMessage
+from models.message import Message
+from models.base import MessageSource
+
 #from app.tasks.tasks import celery_app
 
 # This function will create a new user instance in the database and initiate the message receiving state.
 async def create_new_registration(message: types.Message, state: FSMContext, user_id: int, username: str):
     session = SessionLocal()
-    new_user = User(id=user_id, username=username, is_active=False)
+    new_user = User(id=user_id, username=username, is_active=False, is_ready_to_chat=False)
     session.add(new_user)
     session.commit()
     await ask_user_to_send_messages_to_fill_profile(message, state)
@@ -75,9 +77,12 @@ async def ask_user_to_send_messages_to_fill_profile(message: types.Message, stat
 
 
 async def receiving_messages_on_registration_handler(message: types.Message, state: FSMContext):
-    message_count = await increment_message_count(message, state)
-    await save_registration_message(message, message_count)
-    await check_message_threshold(message, state, message_count)
+    if state is RegistrationStates.receiving_messages or RegistrationStates.starting or RegistrationStates.completed:
+        message_count = await increment_message_count(message, state)
+        await save_registration_message(message, message_count)
+        await check_message_threshold(message, state, message_count)
+    else:
+        logger.critical(f"Unexpected state encountered while receiving messages on registration: {state}")
 
 def message_entities_to_dict(entities):
     return [
@@ -117,15 +122,16 @@ async def save_registration_message(message: types.Message, message_count: int):
         photo = message.photo[-1].file_id  # Get the file_id of the last (largest) photo size
 
     try:
-        new_message = ProfileDataTieredMessage(
+        new_message = Message(
             user_id=user_id,
             tier=tier,
+            message_source=MessageSource.registration_profile,
             text=message.text or None,
-            audio=message.audio.file_id.encode("utf-8") if message.audio else None,
-            video= message.video.file_id.encode("utf-8") if message.video else None, 
-            document=message.document.file_id.encode("utf-8") if message.document else None,
-            animation=message.animation.file_id.encode("utf-8") if message.animation else None,
-            sticker=message.sticker.file_id.encode("utf-8") if message.sticker else None,
+            audio=message.audio.file_id if message.audio else None,
+            video= message.video.file_id if message.video else None, 
+            document=message.document.file_id if message.document else None,
+            animation=message.animation.file_id if message.animation else None,
+            sticker=message.sticker.file_id if message.sticker else None,
             author_signature=message.author_signature if message.author_signature else None,
             caption=message.caption if message.caption else None,
             #caption_entities=message.caption_entities if message.caption_entities else None,
@@ -191,7 +197,7 @@ async def start_registration_handler(message: types.Message, state: FSMContext):
             # Check if user is already registered
             if existing_user:
                 # Check if the user has the required number of profile messages
-                profile_messages_count = session.query(ProfileDataTieredMessage).filter_by(user_id=user_id).count()
+                profile_messages_count = session.query(Message).filter_by(user_id=user_id).count()
 
                 if existing_user.is_active and profile_messages_count == 10:
                     # Notify the active user with the complete profile that their existing messages will be used
@@ -211,7 +217,7 @@ async def start_registration_handler(message: types.Message, state: FSMContext):
                     await ask_user_to_send_messages_to_fill_profile(message, state)
             else:
                 # User is not registered, start new registration
-                await create_new_registration(message, state, user_id, message.from_user.username)
+                await create_new_registration(message, state, user_id, (message.from_user.username or f"{message.from_user.first_name} {message.from_user.last_name}"))
 
         except Exception as e:
             await registration_failed(message, state, e)

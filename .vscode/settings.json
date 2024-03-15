@@ -1,0 +1,11 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "database": "${workspaceFolder:dd_test_u_bot_simple}/telegram_test_dating_bot_database.db",
+            "name": "test_db"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}
