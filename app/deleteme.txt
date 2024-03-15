@@ -1,8 +1,3 @@
-Ok. Now, let's do some refactoring. We have two models in ./models — message.py and profile_data_tiered_message.py. They provide Message and ProfileDataTieredMessage classes respectively. In fact, both classes represent the same entity from the real world: a Telegram message sent to the bot.  I want to reorganize the way how the bot stores data. I want to send all the messages from all the users received in any cases in one table. Then I want tow separate table: 
+Now, we need to sync messages is's between two users during the conversation. We have the function message_reaction_handler. Here we receive a reaction from the user. We have the message ID on which that reaction was given. 
 
-1. The first connects the users' profiles and the messages that the users send during the registration process (Users table and Messages table).
-2. The second connects the users' profiles, the conversations and the messages. 
-
-How can I achieve that? 
-
-The database doesn't content any valuable data, so we do not need the migration, just recreate the database from scratch. 
+We also have @Conversation class representing Conversations table in the database. We need to select the row from the database where user1_id is equal to message_reaction.chat.id and where is_active is true. Then we need the user2_id from this row.
