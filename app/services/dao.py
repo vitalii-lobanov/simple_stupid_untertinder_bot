@@ -11,6 +11,7 @@ from models.reaction import Reaction
 from database.engine import SessionLocal
 from sqlalchemy.exc import SQLAlchemyError
 from utils.debug import logger
+from models.base import MessageSource
 
 
 def message_entities_to_dict(entities):
@@ -40,10 +41,12 @@ def link_preview_options_to_dict(link_preview_options):
 
 
 
-async def save_telegram_message(message: types.Message, message_count: int):
+#TODO: handle other media types. Especially message_source (enum from base(?))
+
+async def save_telegram_message(message: types.Message, message_source: MessageSource = None, tier: int = -1, conversation_id: int = None):
     user_id = message.from_user.id
+    message_id = message.message_id
     session = SessionLocal()
-    tier = message_count - 1
     photo = None
     video = None
 
@@ -55,7 +58,9 @@ async def save_telegram_message(message: types.Message, message_count: int):
         new_message = Message(
             user_id=user_id,
             tier=tier,
-            message_source=MessageSource.registration_profile,
+            message_source=message_source,
+            message_id=message_id,
+            conversation_id=conversation_id,
             text=message.text or None,
             audio=message.audio.file_id if message.audio else None,
             video= message.video.file_id if message.video else None, 
@@ -96,6 +101,12 @@ async def save_telegram_message(message: types.Message, message_count: int):
         logger.error(f"Failed to save message: {e}")
     finally:
         session.close()
+
+
+async def save_tiered_registration_message(message: types.Message, message_count: int):
+    tier = message_count - 1
+    message_source = MessageSource.registration_profile
+    await save_telegram_message(message, message_source, tier)
 
 
 def save_telegram_reaction(user_id, sender_message_id, new_emoji, old_emoji=None, timestamp=None, receiver_message_id=None):

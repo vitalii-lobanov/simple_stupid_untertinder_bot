@@ -8,7 +8,7 @@ from states import CommonStates
 from utils.debug import logger
 from models.message import Message
 from models.base import MessageSource
-from services.dao import save_telegram_message
+from services.dao import save_telegram_message, save_tiered_registration_message
 
 #from app.tasks.tasks import celery_app
 
@@ -80,7 +80,7 @@ async def ask_user_to_send_messages_to_fill_profile(message: types.Message, stat
 async def receiving_messages_on_registration_handler(message: types.Message, state: FSMContext):
     if state is RegistrationStates.receiving_messages or RegistrationStates.starting or RegistrationStates.completed:
         message_count = await increment_message_count(message, state)
-        await save_telegram_message(message, message_count)
+        await save_tiered_registration_message(message, message_count)
         await check_message_threshold(message, state, message_count)
     else:
         logger.error(f"Unexpected state encountered while receiving messages on registration: {state}")

@@ -15,4 +15,9 @@ class Reaction(Base):
 
     user = relationship('User')
     # The backref 'message' here allows us to access the message from a Reaction instance
-    message = relationship('Message', backref='reactions')
+    #message = relationship('Message', backref='reactions')
+    #message = relationship('Message', backref='message_reactions', foreign_keys=[sender_message_id])
+    #message = relationship('Message', backref='reactions', foreign_keys=[sender_message_id])
+    #message = relationship('Message', backref='message_reactions', foreign_keys=[sender_message_id])
+    # Ensure backref is a unique name, not used anywhere else as a property in the Message model
+    message = relationship('Message', backref='message_reactions', foreign_keys=[sender_message_id])

@@ -15,6 +15,8 @@ from models.user import User
 from states import CommonStates, UserStates
 from utils.debug import logger
 from services.dao import save_telegram_message, save_telegram_reaction
+from models.message import MessageSource
+
 
 # TODO: возможно, во всех случаях Exceptions ставить default_state, причём не только тут.
 
@@ -207,16 +209,9 @@ async def state_user_is_in_chatting_progress_handler(
                 else conversation.user1_id
             )
 
-            # Step 2: Save the message to the database with the determined conversation_id
-            new_message = Message(
-                user_id=user_id,
-                conversation_id=conversation.id,
-                text=message.text,
-            )
-            session.add(new_message)
-            session.commit()
+            await save_telegram_message(message=message, message_source=MessageSource.conversation, conversation_id=conversation.id)
 
-            # Now send the message to the partner
+            # Construct new Telegram message object(?)_
             await bot_instance.send_message(chat_id=partner_id, text=message.text)
             # ... Add handling for other message types (photos, videos, etc.)
         else:
@@ -330,29 +325,40 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
     #     if actual_emoji_reaction == expected_emoji_reaction:
     #         logger.debug("Test heart emoji detected.")
             
-            
+
     #     pass
     # except Exception as e:
     #     logger.error("An exception occurred while handling the message reaction: " + str(e))
     #     pass
 
     try:
-        
+
+        try:
+            new_emoji = message_reaction.new_reaction[0].emoji
+        except IndexError:
+            new_emoji = None
+
+        try:                
+            old_emoji = message_reaction.old_reaction[0].emoji
+        except IndexError:
+            old_emoji = None
+
         # Save the reaction
         if save_telegram_reaction(
-            user_id=message_reaction.user_id,  
+            user_id=message_reaction.user.id,  
             sender_message_id=message_reaction.message_id,  
-            new_emoji=message_reaction.new_reaction[0].emoji or None,
-            old_emoji=message_reaction.old_reaction[0].emoji or None,
-            timestamp=message_reaction.timestamp        
+            new_emoji=new_emoji,
+            old_emoji=old_emoji,
+            timestamp=datetime.now(),        
         ):
-            emoji_reaction = ReactionTypeEmoji(message_reaction.new_reaction[0].emoji or message_reaction.old_reaction[0].emoji)
+             
             
+            #TODO: продолжить с того, что добиться сохранения сообщений в БД, потом вернуться сюда.
             #TODO: вот сюда надо дописать поиск сообщения в БД conversation, оттуда брать его ID и обновлять реакцию у второго собеседника по ID сообщенния
             #TODO: но сначала надо сделать так, чтобы в беседе сохранялись вообще все сообщения, чтобы было, на что реагировать.
             
             #            await message.react([emoji_reaction])
-
+            emoji_reaction = ReactionTypeEmoji(new_emoji or "")
         else:
             pass
                 

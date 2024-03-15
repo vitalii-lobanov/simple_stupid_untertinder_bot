@@ -8,6 +8,7 @@ class Message(Base):
     __tablename__ = 'messages'     
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
+    message_id = Column(Integer)
     message_source = Column(Enum(MessageSource))
     conversation_id = Column(Integer, ForeignKey('conversations.id'), nullable=True)    
     reactions = relationship('Reaction', backref='message', foreign_keys='[Reaction.sender_message_id]')
@@ -48,6 +49,8 @@ class Message(Base):
     
     user = relationship('User', back_populates='messages')
     conversation = relationship('Conversation', back_populates='messages')
+     # Add a relationship to the Reaction model
+    reactions = relationship('Reaction', backref='message_reactions', foreign_keys='[Reaction.sender_message_id]')
 
 
 
