@@ -12,6 +12,7 @@ class Reaction(Base):
     old_emoji = Column(String, default=None)
     timestamp = Column(DateTime, default=None)
     receiver_message_id = Column(Integer, default=None)
+    rank = Column(Integer, default=0)
 
     user = relationship('User')
     # The backref 'message' here allows us to access the message from a Reaction instance

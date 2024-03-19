@@ -17,6 +17,7 @@ from utils.debug import logger
 from services.dao import save_telegram_message, save_telegram_reaction
 from models.message import MessageSource
 from aiogram.methods.set_message_reaction import SetMessageReaction
+from services.emoji_rank import EmojiRank
 
 
 
@@ -314,6 +315,7 @@ async def stop_chatting_command_handler(
         session.close()
 
 
+#TODO: handle changing or removing the reactions
 async def message_reaction_handler(message_reaction: types.MessageReactionUpdated):
     try:
         try:
@@ -326,6 +328,11 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
         except IndexError:
             old_emoji = None
 
+        emoji = new_emoji or old_emoji
+
+        ranker = EmojiRank()
+        rank = ranker.get_rank(emoji)
+
         # Save the reaction
         if save_telegram_reaction(
             user_id=message_reaction.user.id,  
@@ -333,7 +340,8 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
             sender_message_id=message_reaction.message_id - 1,  
             new_emoji=new_emoji,
             old_emoji=old_emoji,
-            timestamp=datetime.now(),        
+            timestamp=datetime.now(),    
+            rank=rank,    
         ):
             session = session = SessionLocal() 
             # Find the conversation where the message was sent

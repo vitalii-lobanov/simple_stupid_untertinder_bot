@@ -2,7 +2,7 @@
 from models.base import Base, MessageSource
 from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, LargeBinary, String, Enum
 from sqlalchemy.orm import relationship
-
+from models.profile_data import ProfileData
 
 class Message(Base):
     __tablename__ = 'messages'     
@@ -45,12 +45,14 @@ class Message(Base):
     video_note = Column(LargeBinary)
     video = Column(LargeBinary)
     original_sender_id = Column(Integer)
-    original_sender_username = Column(String) 
+    original_sender_username = Column(String)
+     
     
     user = relationship('User', back_populates='messages')
     conversation = relationship('Conversation', back_populates='messages')
      # Add a relationship to the Reaction model
     reactions = relationship('Reaction', backref='message_reactions', foreign_keys='[Reaction.sender_message_id]')
+    profile_data = relationship('ProfileData', order_by=ProfileData.id, back_populates='message')
 
 
 

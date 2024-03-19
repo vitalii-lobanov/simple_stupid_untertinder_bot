@@ -1,3 +1,1 @@
-Now, we need to sync messages is's between two users during the conversation. We have the function message_reaction_handler. Here we receive a reaction from the user. We have the message ID on which that reaction was given. 
-
-We also have @Conversation class representing Conversations table in the database. We need to select the row from the database where user1_id is equal to message_reaction.chat.id and where is_active is true. Then we need the user2_id from this row.
+We're developing a Telegram bot. When the user registers, he or she should send 10 messages which will be used as a user's profile content. We store these messages in 'messages' table. There is also 'users' table and corresponding User ORM class. Now we need to add one more table (say, 'profile_data') which will connect users and their messages sent during the registration. Note that not all the messages should be stored there only the messages sent during the registration. 

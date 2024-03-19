@@ -1,17 +1,11 @@
-from aiogram.fsm.context import FSMContext
 from database.engine import SessionLocal
-from states import RegistrationStates
-from models.user import User
 from aiogram import types
-from states import CommonStates
 from utils.debug import logger
 from models.message import Message
 from models.base import MessageSource
 from models.reaction import Reaction
-from database.engine import SessionLocal
 from sqlalchemy.exc import SQLAlchemyError
-from utils.debug import logger
-from models.base import MessageSource
+from models import ProfileData
 
 
 def message_entities_to_dict(entities):
@@ -101,6 +95,21 @@ async def save_telegram_message(message: types.Message, message_source: MessageS
         logger.error(f"Failed to save message: {e}")
     finally:
         session.close()
+    
+    if message_source == MessageSource.registration_profile:
+        profile_data = ProfileData(user_id=user_id, message_id=message_id)
+        session = SessionLocal()
+        try:
+            session.add(profile_data)
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            # Assuming you have a logger configured
+            logger.error(f"Failed to save profile data: {e}")
+        finally:
+            session.close()
+
+        
 
 
 async def save_tiered_registration_message(message: types.Message, message_count: int):
@@ -109,7 +118,7 @@ async def save_tiered_registration_message(message: types.Message, message_count
     await save_telegram_message(message, message_source, tier)
 
 
-def save_telegram_reaction(user_id, sender_message_id, new_emoji, old_emoji=None, timestamp=None, receiver_message_id=None):
+def save_telegram_reaction(user_id, sender_message_id, new_emoji, old_emoji=None, timestamp=None, receiver_message_id=None, rank=0):
     try:
         # Create a new database session
         session = SessionLocal()
@@ -121,7 +130,8 @@ def save_telegram_reaction(user_id, sender_message_id, new_emoji, old_emoji=None
             new_emoji=new_emoji,
             old_emoji=old_emoji,
             timestamp=timestamp,
-            receiver_message_id=receiver_message_id
+            receiver_message_id=receiver_message_id,
+            rank = rank,
         )
         
         # Add the new reaction to the session and commit
