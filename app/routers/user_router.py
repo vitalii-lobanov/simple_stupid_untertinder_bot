@@ -28,6 +28,7 @@ from bot import bot_instance
 from states import UserStates, CommonStates
 from aiogram.types import ReactionTypeEmoji
 from handlers.tg_chatting_handlers import message_reaction_handler
+from services.score_tiers import message_tiers_count
 
 #bot_instance = None
 
@@ -69,7 +70,7 @@ async def cmd_user_register_start(message: types.Message, state: FSMContext):
     await start_registration_handler(message, state)
 
 
-# The user sends 10 messages to complete registration
+# The user sends message_tiers_count.MESSAGE_TIERS_COUNT messages to complete registration
 @user_router.message(user_is_in_receiving_messages_during_registration_state_filter)
 async def handle_user_receiving_messages_on_registration(message: types.Message, state: FSMContext):
     logger.debug("Handler for receiving_messages state")
@@ -86,7 +87,7 @@ async def message_user_reaction_handler(message_reaction: types.MessageReactionU
 @user_router.message(Command(commands=['show_my_profile']))
 async def cmd_user_show_my_profile(message: types.Message):
     logger.debug("'/hard_unregister' command received")
-    for i in range(0, 10):
+    for i in range(0, message_tiers_count.MESSAGE_TIERS_COUNT):
         await send_tiered_message_to_user(bot_instance, message.from_user.id, i)
 
 

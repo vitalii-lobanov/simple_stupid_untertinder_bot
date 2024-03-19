@@ -9,6 +9,7 @@ from utils.debug import logger
 from models.message import Message
 from models.base import MessageSource
 from services.dao import save_telegram_message, save_tiered_registration_message
+from services.score_tiers import message_tiers_count
 
 #from app.tasks.tasks import celery_app
 
@@ -36,8 +37,8 @@ async def increment_message_count(message: types.Message, state: FSMContext):
 
 
 async def check_message_threshold(message: types.Message, state: FSMContext, message_count: int):
-    if message_count < 10:
-        await message.answer(f"Message {message_count} received. {10 - message_count} messages left.")
+    if message_count < message_tiers_count.MESSAGE_TIERS_COUNT:
+        await message.answer(f"Message {message_count} received. {message_tiers_count.MESSAGE_TIERS_COUNT - message_count} messages left.")
     else:
         await complete_registration(message, state)
 
@@ -74,7 +75,7 @@ async def ask_user_to_send_messages_to_fill_profile(message: types.Message, stat
     await state.set_state(RegistrationStates.receiving_messages)
     await state.update_data(message_count=0)
     logger.debug(f"User {message.from_user.id} has started registration.")
-    await message.answer("Please send 10 messages to complete your registration.")
+    await message.answer(f"Please send {message_tiers_count.MESSAGE_TIERS_COUNT} messages to complete your registration.")
 
 
 async def receiving_messages_on_registration_handler(message: types.Message, state: FSMContext):
@@ -120,7 +121,7 @@ async def start_registration_handler(message: types.Message, state: FSMContext):
                 # Check if the user has the required number of profile messages
                 profile_messages_count = session.query(Message).filter_by(user_id=user_id).count()
 
-                if existing_user.is_active and profile_messages_count == 10:
+                if existing_user.is_active and profile_messages_count == message_tiers_count.MESSAGE_TIERS_COUNT:
                     # Notify the active user with the complete profile that their existing messages will be used
                     await message.answer(
                         "You have already created a profile and your existing messages will be used. "
@@ -134,7 +135,7 @@ async def start_registration_handler(message: types.Message, state: FSMContext):
                     session.commit()
                     await message.answer("Your profile has been reactivated.")
                 else:
-                    # The user is active but doesn't have 10 messages, proceed with message collection
+                    # The user is active but doesn't have message_tiers_count.MESSAGE_TIERS_COUNT messages, proceed with message collection
                     await ask_user_to_send_messages_to_fill_profile(message, state)
             else:
                 # User is not registered, start new registration

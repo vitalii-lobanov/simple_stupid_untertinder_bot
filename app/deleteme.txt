@@ -1,1 +1,1 @@
-We're developing a Telegram bot. When the user registers, he or she should send 10 messages which will be used as a user's profile content. We store these messages in 'messages' table. There is also 'users' table and corresponding User ORM class. Now we need to add one more table (say, 'profile_data') which will connect users and their messages sent during the registration. Note that not all the messages should be stored there only the messages sent during the registration. 
+test

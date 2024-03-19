@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import ReactionTypeEmoji
 from bot import bot_instance
-
+from sqlalchemy import SQLAlchemyError
 # from app.tasks.tasks import celery_app
 from database.engine import SessionLocal
 from dispatcher import dispatcher
@@ -18,6 +18,8 @@ from services.dao import save_telegram_message, save_telegram_reaction
 from models.message import MessageSource
 from aiogram.methods.set_message_reaction import SetMessageReaction
 from services.emoji_rank import EmojiRank
+from services.score_tiers import message_tiers_count, profile_disclosure_tiers_score_levels
+from handlers.tg_user_staging import send_tiered_message_to_user
 
 
 
@@ -315,6 +317,23 @@ async def stop_chatting_command_handler(
         session.close()
 
 
+async def update_user_score_in_conversation(state: FSMContext, delta: float):    
+    current_score = state.get_data('current_score', 0)
+    await state.update_data(current_score=current_score + delta) 
+    return current_score
+
+
+async def check_conversation_score_threshold(current_score: int):
+    for index, tier_threshold in enumerate(profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS):
+        if current_score >= tier_threshold:
+            logger.debug(f"Your score is {current_score}. You have reached the {tier_threshold} score threshold at index {index}.")
+            return index
+        else:
+            await logger.debug(f"Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.")
+            return False
+
+
+
 #TODO: handle changing or removing the reactions
 async def message_reaction_handler(message_reaction: types.MessageReactionUpdated):
     try:
@@ -353,11 +372,9 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
                 Conversation.is_active == True
                 ).first()
             
-
             if conversation: 
                  # Identify the other participant in the conversation
                 partner_id = conversation.user2_id if conversation.user1_id == user_id else conversation.user1_id
-
                 emoji_reaction = ReactionTypeEmoji(emoji = new_emoji or "")
 
                 await bot_instance.set_message_reaction(
@@ -365,9 +382,35 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
                     message_id=message_reaction.message_id-1,
                     reaction=[emoji_reaction]
                 )             
+
+            else:
+                logger.error("Failed to find the conversation where the message was sent")
+                raise SQLAlchemyError ("Failed to find the conversation where the message was sent")         
+
+
+            state=dispatcher.current_state(chat=chat_id, user=user_id),
+            current_score = await update_user_score_in_conversation(
+                state = state,
+                delta=rank
+            )
+            
+            reached_tier = await check_conversation_score_threshold(current_score=current_score)
+            if reached_tier:
+                logger.debug(f"Your score is {current_score}. You have reached the {reached_tier} score threshold.")
+                await bot_instance.send_message(chat_id=user_id, text="""Your score is {current_score}. You have reached the {reached_tier} score threshold. 
+                                                Now you can see a part of your partner's profile.""")
+                send_tiered_message_to_user(bot_instance, user_id, reached_tier)
+
+                if reached_tier >= len (profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1:
+                    logger.debug(f"Your score is {current_score}. You have reached the last score threshold.")
+                    await bot_instance.send_message(chat_id=user_id, text="You have reached the last score threshold. Now you can see your partner's profile.")
+                    #TODO: handle last tier
+                
+
                 
         else:
-            pass
+            logger.error("Failed to save the reaction to the database")
+            raise SQLAlchemyError ("Failed to save the reaction to the database")
                 
     except Exception as e:
         logger.error(f"An exception occurred while handling the message reaction: {e}")
