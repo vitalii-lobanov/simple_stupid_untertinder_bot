@@ -4,10 +4,10 @@ from models.base import Base
 
 class Reaction(Base):
     __tablename__ = 'reactions'
-    
     id = Column(Integer, primary_key=True)
+    message_id = Column(Integer, ForeignKey('messages.id'))
     user_id = Column(Integer, ForeignKey('users.id'))    
-    sender_message_id = Column(Integer, ForeignKey('messages.id'))
+    sender_message_id = Column(Integer, default=None)
     new_emoji = Column(String, default=None)
     old_emoji = Column(String, default=None)
     timestamp = Column(DateTime, default=None)
@@ -21,4 +21,6 @@ class Reaction(Base):
     #message = relationship('Message', backref='reactions', foreign_keys=[sender_message_id])
     #message = relationship('Message', backref='message_reactions', foreign_keys=[sender_message_id])
     # Ensure backref is a unique name, not used anywhere else as a property in the Message model
-    message = relationship('Message', backref='message_reactions', foreign_keys=[sender_message_id])
+    message = relationship('Message', backref='emoji_reactions')
+    
+    

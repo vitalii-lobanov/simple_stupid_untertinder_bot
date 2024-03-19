@@ -118,7 +118,7 @@ async def save_tiered_registration_message(message: types.Message, message_count
     await save_telegram_message(message, message_source, tier)
 
 
-def save_telegram_reaction(user_id, sender_message_id, new_emoji, old_emoji=None, timestamp=None, receiver_message_id=None, rank=0):
+def save_telegram_reaction(user_id, new_emoji, old_emoji=None, timestamp=None, receiver_message_id=None, message_id=None, rank=0):
     try:
         # Create a new database session
         session = SessionLocal()
@@ -126,7 +126,8 @@ def save_telegram_reaction(user_id, sender_message_id, new_emoji, old_emoji=None
         # Create a new Reaction instance
         reaction = Reaction(
             user_id=user_id,
-            sender_message_id=sender_message_id,
+            message_id=message_id,
+            #sender_message_id=sender_message_id,
             new_emoji=new_emoji,
             old_emoji=old_emoji,
             timestamp=timestamp,

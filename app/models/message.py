@@ -8,7 +8,7 @@ class Message(Base):
     __tablename__ = 'messages'     
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
-    message_id = Column(Integer)
+    #message_id = Column(Integer, ForeignKey('messages.id'))
     message_source = Column(Enum(MessageSource))
     conversation_id = Column(Integer, ForeignKey('conversations.id'), nullable=True)    
     reactions = relationship('Reaction', backref='message', foreign_keys='[Reaction.sender_message_id]')
@@ -46,13 +46,17 @@ class Message(Base):
     video = Column(LargeBinary)
     original_sender_id = Column(Integer)
     original_sender_username = Column(String)
-     
+
     
     user = relationship('User', back_populates='messages')
     conversation = relationship('Conversation', back_populates='messages')
      # Add a relationship to the Reaction model
-    reactions = relationship('Reaction', backref='message_reactions', foreign_keys='[Reaction.sender_message_id]')
+    #reactions = relationship('Reaction', backref='message_reactions', foreign_keys='[Reaction.sender_message_id]')
     profile_data = relationship('ProfileData', order_by=ProfileData.id, back_populates='message')
+
+    #reactions = relationship('Reaction', backref='message', foreign_keys='[Reaction.message_id]')
+    reactions = relationship('Reaction', backref='message_reactions', foreign_keys='[Reaction.message_id]')
+    # app/models/message.py
 
 
 

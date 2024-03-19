@@ -86,7 +86,7 @@ async def message_user_reaction_handler(message_reaction: types.MessageReactionU
 @user_router.message(Command(commands=['show_my_profile']))
 async def cmd_user_show_my_profile(message: types.Message):
     logger.debug("'/hard_unregister' command received")
-    for i in range(0, 9):
+    for i in range(0, 10):
         await send_tiered_message_to_user(bot_instance, message.from_user.id, i)
 
 

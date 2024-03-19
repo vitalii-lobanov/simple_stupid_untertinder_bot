@@ -337,7 +337,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
         if save_telegram_reaction(
             user_id=message_reaction.user.id,  
             # I do not know why -1 is needed
-            sender_message_id=message_reaction.message_id - 1,  
+            message_id=message_reaction.message_id - 1,  
             new_emoji=new_emoji,
             old_emoji=old_emoji,
             timestamp=datetime.now(),    
