@@ -6,7 +6,7 @@ class MessageTiersCount:
 
 @final
 class ProfileDisclosureTiersScoreLevels:
-    PROFILE_DISCLOSURE_TIER_LEVELS: Final[list[float]]= [0, 1, 2, 3, 4, 5, 6, 7]
+    PROFILE_DISCLOSURE_TIER_LEVELS: Final[list[float]]= [10, 20, 30, 40, 50, 60, 70, 80]
     
 
 message_tiers_count = MessageTiersCount()

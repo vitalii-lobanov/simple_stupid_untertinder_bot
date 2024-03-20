@@ -8,7 +8,7 @@ class Message(Base):
     __tablename__ = 'messages'     
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
-    #message_id = Column(Integer, ForeignKey('messages.id'))
+    message_id = Column(Integer, ForeignKey('messages.id'))
     message_source = Column(Enum(MessageSource))
     conversation_id = Column(Integer, ForeignKey('conversations.id'), nullable=True)    
     reactions = relationship('Reaction', backref='message', foreign_keys='[Reaction.sender_message_id]')
@@ -46,6 +46,8 @@ class Message(Base):
     video = Column(LargeBinary)
     original_sender_id = Column(Integer)
     original_sender_username = Column(String)
+    sender_in_conversation_id = Column(Integer)
+    
 
     
     user = relationship('User', back_populates='messages')

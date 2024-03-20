@@ -79,10 +79,10 @@ async def handle_user_receiving_messages_on_registration(message: types.Message,
 
 # Default handler for all other messages
 @user_router.message_reaction()
-async def message_user_reaction_handler(message_reaction: types.MessageReactionUpdated):
+async def message_user_reaction_handler(message_reaction: types.MessageReactionUpdated, state: FSMContext):
     logger.debug("Message reaction handler...")
     #if state is UserStates.chatting_in_progress:
-    await message_reaction_handler(message_reaction)
+    await message_reaction_handler(message_reaction, state)
 
 @user_router.message(Command(commands=['show_my_profile']))
 async def cmd_user_show_my_profile(message: types.Message):

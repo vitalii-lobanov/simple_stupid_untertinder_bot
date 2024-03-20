@@ -85,8 +85,8 @@ async def save_telegram_message(message: types.Message, message_source: MessageS
             quote=message.quote if message.quote else None,          
             story=message.story if message.story else None,
             voice=message.voice if message.voice else None,
-            video_note=message.video_note if message.video_note else None
-
+            video_note=message.video_note if message.video_note else None,
+            sender_in_conversation_id = message.from_user.id if message.from_user else None,
         )
         session.add(new_message)
         session.commit()

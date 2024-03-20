@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import ReactionTypeEmoji
 from bot import bot_instance
-from sqlalchemy import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 # from app.tasks.tasks import celery_app
 from database.engine import SessionLocal
 from dispatcher import dispatcher
@@ -22,7 +22,21 @@ from services.score_tiers import message_tiers_count, profile_disclosure_tiers_s
 from handlers.tg_user_staging import send_tiered_message_to_user
 
 
+async def __initialize_states_for_chatter__(state: FSMContext):
+        await state.update_data(current_score=0)
+        await state.update_data(message_count=0)
+        await state.update_data(disclosure_level=-1)        
 
+
+async def __set_disclosure_level__(state: FSMContext, level: int):
+    await state.update_data(disclosure_level=level)
+
+async def __get_disclosure_level__(state: FSMContext):
+    disclosure_level_data= await state.get_data()
+    disclosure_level = disclosure_level_data['disclosure_level'] 
+    return disclosure_level
+        
+            
 # TODO: возможно, во всех случаях Exceptions ставить default_state, причём не только тут.
 
 async def one_more_user_is_ready_to_chat(user_id: int, user_state: FSMContext):
@@ -72,6 +86,9 @@ async def one_more_user_is_ready_to_chat(user_id: int, user_state: FSMContext):
                 ),
             )
             await partner_context.set_state(UserStates.chatting_in_progress)
+            
+            await __initialize_states_for_chatter__(user_state)
+            await __initialize_states_for_chatter__(partner_context)
 
             # Step 4: Inform both users
             await bot_instance.send_message(
@@ -318,24 +335,47 @@ async def stop_chatting_command_handler(
 
 
 async def update_user_score_in_conversation(state: FSMContext, delta: float):    
-    current_score = state.get_data('current_score', 0)
-    await state.update_data(current_score=current_score + delta) 
-    return current_score
+    score_data= await state.get_data()
+    new_score = score_data['current_score'] + delta
+    await state.update_data(current_score=new_score) 
+    return new_score
 
 
-async def check_conversation_score_threshold(current_score: int):
-    for index, tier_threshold in enumerate(profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS):
-        if current_score >= tier_threshold:
+async def check_conversation_score_threshold(current_score: int, state: FSMContext):
+    current_disclosure_level = await __get_disclosure_level__(state)
+    for index, tier_threshold in enumerate(reversed(profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS)):
+        reversed_index = len(profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1 - index
+        if (current_score >= tier_threshold) and (current_disclosure_level < reversed_index):
+            await __set_disclosure_level__(state, reversed_index)
             logger.debug(f"Your score is {current_score}. You have reached the {tier_threshold} score threshold at index {index}.")
-            return index
-        else:
-            await logger.debug(f"Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.")
-            return False
+            return reversed_index
+    
+    logger.debug(f"Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.")
+    return False
 
+
+async def access_user_context(chat_id: int, user_id: int, bot_id: int):
+        user_context = FSMContext(
+        dispatcher.storage,
+        StorageKey(
+            chat_id=chat_id, user_id=user_id, bot_id=bot_id
+        ),
+            )
+        return user_context
+
+    
 
 
 #TODO: handle changing or removing the reactions
-async def message_reaction_handler(message_reaction: types.MessageReactionUpdated):
+async def message_reaction_handler(message_reaction: types.MessageReactionUpdated, user_context: FSMContext):
+    #Users should not react to their own messages
+    user_id = message_reaction.user.id
+    message = await bot_instance.get_message(chat_id=user_id, message_id=message_reaction.message_id)
+    message_sender = message.from_user.id
+    if user_id == message_sender:
+        await bot_instance.send_message(chat_id=user_id, text="You should not react to your own messages.")
+        return
+
     try:
         try:
             new_emoji = message_reaction.new_reaction[0].emoji
@@ -366,7 +406,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
             # Find the conversation where the message was sent
             chat_id = message_reaction.chat.id
             message_id = message_reaction.message_id
-            user_id = message_reaction.user.id
+            
             conversation = session.query(Conversation).filter(
                 (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
                 Conversation.is_active == True
@@ -386,20 +426,25 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
             else:
                 logger.error("Failed to find the conversation where the message was sent")
                 raise SQLAlchemyError ("Failed to find the conversation where the message was sent")         
+            
 
+                
 
-            state=dispatcher.current_state(chat=chat_id, user=user_id),
+            #TODO: change any other context access to call custom get context — access_user_context
+
+            #user_context = await access_user_context(chat_id=chat_id, user_id=user_id, bot_id=bot_instance.id)
+          
             current_score = await update_user_score_in_conversation(
-                state = state,
+                state = user_context,
                 delta=rank
             )
             
-            reached_tier = await check_conversation_score_threshold(current_score=current_score)
-            if reached_tier:
+            reached_tier = await check_conversation_score_threshold(current_score=current_score, state=user_context)
+            if reached_tier :
                 logger.debug(f"Your score is {current_score}. You have reached the {reached_tier} score threshold.")
-                await bot_instance.send_message(chat_id=user_id, text="""Your score is {current_score}. You have reached the {reached_tier} score threshold. 
+                await bot_instance.send_message(chat_id=user_id, text=f"""Your score is {current_score}. You have reached the {reached_tier} score threshold. 
                                                 Now you can see a part of your partner's profile.""")
-                send_tiered_message_to_user(bot_instance, user_id, reached_tier)
+                await send_tiered_message_to_user(bot_instance, user_id, reached_tier)
 
                 if reached_tier >= len (profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1:
                     logger.debug(f"Your score is {current_score}. You have reached the last score threshold.")
