@@ -427,18 +427,20 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
     try:
         try:
             new_emoji = message_reaction.new_reaction[0].emoji
+            inverse_multiplier = 1
         except IndexError:
             new_emoji = None
 
         try:                
             old_emoji = message_reaction.old_reaction[0].emoji
+            inverse_multiplier = -1
         except IndexError:
             old_emoji = None
 
         emoji = new_emoji or old_emoji
 
         ranker = EmojiRank()
-        rank = ranker.get_rank(emoji)
+        rank = ranker.get_rank(emoji) * inverse_multiplier
 
         # Save the reaction
         # TODO: -1 logic from __get_message_sender_id_from_db__()
@@ -455,12 +457,12 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
    
                 # Identify the other participant in the conversation
             partner_id = conversation.user2_id if conversation.user1_id == user_id else conversation.user1_id
-            emoji_reaction = ReactionTypeEmoji(emoji = new_emoji or "")
+            emoji_reaction = ReactionTypeEmoji(emoji = new_emoji) if new_emoji else None
 
             await bot_instance.set_message_reaction(
                 chat_id=partner_id,
                 message_id=message_reaction.message_id-1,
-                reaction=[emoji_reaction]
+                reaction=[emoji_reaction] if emoji_reaction else []
             )             
 
               
@@ -482,6 +484,8 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
                 logger.debug(f"Your score is {current_score}. You have reached the {reached_tier} score threshold.")
                 await bot_instance.send_message(chat_id=user_id, text=f"""Your score is {current_score}. You have reached the {reached_tier} score threshold. 
                                                 Now you can see a part of your partner's profile.""")
+                
+                #TODO: Change all the parameters everywhere for named arguments instead of positional
                 await send_tiered_message_to_user(bot_instance, user_id, partner_id, reached_tier)
 
                 if reached_tier >= len (profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1:
