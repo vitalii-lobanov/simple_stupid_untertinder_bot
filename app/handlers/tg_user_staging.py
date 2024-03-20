@@ -4,11 +4,13 @@ from utils.debug import logger
 from models.message import Message
 
 
-async def send_tiered_message_to_user(bot_instance, user_id: int, tier: int):
+#TODO: move this function to the service
+#TODO: combine this function with send_telegram_message!!!
+async def send_tiered_message_to_user(bot_instance, user_id: int, partner_id, tier: int):
     session = SessionLocal()
     try:
         # Query for the message of the given tier
-        tiered_message = session.query(Message).filter_by(user_id=user_id, tier=tier).first()
+        tiered_message = session.query(Message).filter_by(user_id=partner_id, tier=tier).first()
         caption = tiered_message.caption
         if tiered_message:
             media_group = []

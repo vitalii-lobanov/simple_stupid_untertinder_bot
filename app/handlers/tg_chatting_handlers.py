@@ -363,19 +363,67 @@ async def access_user_context(chat_id: int, user_id: int, bot_id: int):
             )
         return user_context
 
-    
 
+#TODO: check session.close() for all the open sessions
+
+
+def __get_message_sender_id_from_db__(message_id: int, conversation_id: int) -> int:
+    session = SessionLocal()   
+ 
+    # messages = session.query(Message)
+    # message = messages.filter_by(message_id = 4687).first()
+    # message = messages.filter_by(id=4687).first()
+
+    #TODO: check if this is correct, very dirty hack
+    id_to_find = message_id - 1
+
+    #TODO: check if this is correct, very dirty hack
+    #TODO: if correct, create a separate function for this
+    message = session.query(Message).filter_by(
+        message_id = id_to_find, 
+        conversation_id = conversation_id
+    ).first() or session.query(Message).filter_by(
+        message_id = message_id, 
+        conversation_id = conversation_id
+    ).first()
+    session.close()
+
+    
+    
+    # Return the sender_in_conversation_id if the message is found
+    if message:
+        return message.sender_in_conversation_id
+    else:
+        # Handle the case where the message is not found, e.g., return None or raise an exception
+        raise SQLAlchemyError(f"Failed to find the message {message_id} in the database for {conversation_id} conversation.")
 
 #TODO: handle changing or removing the reactions
 async def message_reaction_handler(message_reaction: types.MessageReactionUpdated, user_context: FSMContext):
-    #Users should not react to their own messages
+
     user_id = message_reaction.user.id
-    message = await bot_instance.get_message(chat_id=user_id, message_id=message_reaction.message_id)
-    message_sender = message.from_user.id
+
+   #TODO: forbid to like bot's service messages (not redirected from the chat partner)
+
+    # Find the conversation where the message was sent
+    session = SessionLocal()     
+    conversation = session.query(Conversation).filter(
+        (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
+        Conversation.is_active == True
+        ).first()
+    
+    if not conversation:
+        logger.error("Failed to find the conversation where the message was sent")
+        raise SQLAlchemyError ("Failed to find the conversation where the message was sent")  
+        return
+    
+    #Users should not react to their own messages    
+    message_sender = __get_message_sender_id_from_db__(message_id=message_reaction.message_id, conversation_id=conversation.id)
     if user_id == message_sender:
+        #TODO: add more user messages text for this (i.e. narcissism)
         await bot_instance.send_message(chat_id=user_id, text="You should not react to your own messages.")
         return
-
+    
+        
     try:
         try:
             new_emoji = message_reaction.new_reaction[0].emoji
@@ -393,6 +441,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
         rank = ranker.get_rank(emoji)
 
         # Save the reaction
+        # TODO: -1 logic from __get_message_sender_id_from_db__()
         if save_telegram_reaction(
             user_id=message_reaction.user.id,  
             # I do not know why -1 is needed
@@ -402,30 +451,19 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
             timestamp=datetime.now(),    
             rank=rank,    
         ):
-            session = session = SessionLocal() 
-            # Find the conversation where the message was sent
-            chat_id = message_reaction.chat.id
-            message_id = message_reaction.message_id
             
-            conversation = session.query(Conversation).filter(
-                (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
-                Conversation.is_active == True
-                ).first()
-            
-            if conversation: 
-                 # Identify the other participant in the conversation
-                partner_id = conversation.user2_id if conversation.user1_id == user_id else conversation.user1_id
-                emoji_reaction = ReactionTypeEmoji(emoji = new_emoji or "")
+   
+                # Identify the other participant in the conversation
+            partner_id = conversation.user2_id if conversation.user1_id == user_id else conversation.user1_id
+            emoji_reaction = ReactionTypeEmoji(emoji = new_emoji or "")
 
-                await bot_instance.set_message_reaction(
-                    chat_id=partner_id,
-                    message_id=message_reaction.message_id-1,
-                    reaction=[emoji_reaction]
-                )             
+            await bot_instance.set_message_reaction(
+                chat_id=partner_id,
+                message_id=message_reaction.message_id-1,
+                reaction=[emoji_reaction]
+            )             
 
-            else:
-                logger.error("Failed to find the conversation where the message was sent")
-                raise SQLAlchemyError ("Failed to find the conversation where the message was sent")         
+              
             
 
                 
@@ -440,11 +478,11 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
             )
             
             reached_tier = await check_conversation_score_threshold(current_score=current_score, state=user_context)
-            if reached_tier :
+            if reached_tier is not False:
                 logger.debug(f"Your score is {current_score}. You have reached the {reached_tier} score threshold.")
                 await bot_instance.send_message(chat_id=user_id, text=f"""Your score is {current_score}. You have reached the {reached_tier} score threshold. 
                                                 Now you can see a part of your partner's profile.""")
-                await send_tiered_message_to_user(bot_instance, user_id, reached_tier)
+                await send_tiered_message_to_user(bot_instance, user_id, partner_id, reached_tier)
 
                 if reached_tier >= len (profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1:
                     logger.debug(f"Your score is {current_score}. You have reached the last score threshold.")
@@ -454,6 +492,8 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
 
                 
         else:
+            #TODO: here and everywhere else: clear states on exceptions!
+
             logger.error("Failed to save the reaction to the database")
             raise SQLAlchemyError ("Failed to save the reaction to the database")
                 
