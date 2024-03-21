@@ -1,6 +1,6 @@
 import random
 from datetime import datetime
-
+from utils.text_messages import message_a_conversation_partner_found, message_you_now_connected_to_the_conversation_partner
 from aiogram import types
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
@@ -93,10 +93,10 @@ async def one_more_user_is_ready_to_chat(user_id: int, user_state: FSMContext):
             # Step 4: Inform both users
             await bot_instance.send_message(
                 chat_id=current_user_id,
-                text="You are now connected with a chat partner!",
+                text=message_you_now_connected_to_the_conversation_partner(),
             )
             await bot_instance.send_message(
-                chat_id=partner.id, text="Someone became your chat partner!"
+                chat_id=partner.id, text=message_a_conversation_partner_found()
             )
 
         else:
@@ -367,7 +367,7 @@ async def access_user_context(chat_id: int, user_id: int, bot_id: int):
 #TODO: check session.close() for all the open sessions
 
 
-def __get_message_sender_id_from_db__(message_id: int, conversation_id: int) -> int:
+def __get_message__from_db__(message_id: int, conversation_id: int) -> Message:
     session = SessionLocal()   
  
     # messages = session.query(Message)
@@ -392,10 +392,11 @@ def __get_message_sender_id_from_db__(message_id: int, conversation_id: int) -> 
     
     # Return the sender_in_conversation_id if the message is found
     if message:
-        return message.sender_in_conversation_id
+        return message
     else:
         # Handle the case where the message is not found, e.g., return None or raise an exception
-        raise SQLAlchemyError(f"Failed to find the message {message_id} in the database for {conversation_id} conversation.")
+        #raise SQLAlchemyError(f"Failed to find the message {message_id} in the database for {conversation_id} conversation.")
+        return None
 
 #TODO: handle changing or removing the reactions
 async def message_reaction_handler(message_reaction: types.MessageReactionUpdated, user_context: FSMContext):
@@ -417,7 +418,21 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
         return
     
     #Users should not react to their own messages    
-    message_sender = __get_message_sender_id_from_db__(message_id=message_reaction.message_id, conversation_id=conversation.id)
+    message_from_db = __get_message__from_db__(message_id=message_reaction.message_id, conversation_id=conversation.id)
+    message_sender = message_from_db.sender_in_conversation_id
+
+    # TODO:
+        #А вот тут посмотреть, что делать. None может быть разным: 
+        # 1 — когда юзер лайкнул что-то из предыдущей беседы
+        # 2 — когда юзер лайкнул сервисное сообщение бота
+        # 3 — реальная ошибка логики / бота
+        # В первом случае надо ему послать сообщение о том, что не надо лайкать предыдущее
+        # Во втором надо сказать, что бота лайкать не нужно (и не продолжать логику исполнения)
+        # В третьем — кинуть не только исключение, но и сообщение юзеру — полезно на тест. 
+
+    if message_sender is None:
+        pass
+
     if user_id == message_sender:
         #TODO: add more user messages text for this (i.e. narcissism)
         await bot_instance.send_message(chat_id=user_id, text="You should not react to your own messages.")

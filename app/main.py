@@ -26,3 +26,5 @@ if __name__ == '__main__':
 
 #TODO: look TODO's
 #TODO: test reactions cancellation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#TODO: сначала переписать logger так, чтобы он при возможности слал сообщение юзеру тоже
+#TODO: types for functions and arguments
