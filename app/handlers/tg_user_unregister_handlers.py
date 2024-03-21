@@ -21,7 +21,7 @@ async def cmd_unregister(message: types.Message):
     except Exception as e:
         session.rollback()
         await message.answer("Unregistration failed.")
-        logger.error(str(e))
+        await logger.error(msg=f"Unregistration failed: {str(e)}", chat_id=user_id)
         # Log the exception or handle it as necessary
     finally:
         session.close()
@@ -29,7 +29,7 @@ async def cmd_unregister(message: types.Message):
 
 async def cmd_hard_unregister(message: types.Message):
     user_id = message.from_user.id
-    logger.debug(f"Trying to unregister user: {user_id}")
+    logger.sync_debug(f"Trying to unregister user: {user_id}")
     # Create a new database session
     session = SessionLocal()
     try:

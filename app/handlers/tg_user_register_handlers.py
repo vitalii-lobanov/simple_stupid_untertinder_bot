@@ -26,7 +26,7 @@ async def create_new_registration(message: types.Message, state: FSMContext, use
 async def registration_failed(message: types.Message, state: FSMContext, exception: Exception):
     await state.set_state(CommonStates.default)
     await message.answer("Registration failed.")
-    logger.error(str(exception))
+    await logger.error(msg=f'Failed to complete registration. Exception: {str(exception)}', state=state)
 
 
 async def increment_message_count(message: types.Message, state: FSMContext):
@@ -63,9 +63,8 @@ async def complete_registration(message: types.Message, state: FSMContext):
 
 async def handle_registration_error(message: types.Message, state: FSMContext, exception: Exception):
     session = SessionLocal()
-    session.rollback()
-    await message.answer("Failed to complete registration.")
-    logger.error(str(exception))  # Log the exception
+    session.rollback()    
+    await logger.error(msg=f'Failed to complete registration: {str(exception)}', state=state)  # Log the exception
     await state.set_state(CommonStates.default)
     session.close()
 
@@ -74,7 +73,7 @@ async def handle_registration_error(message: types.Message, state: FSMContext, e
 async def ask_user_to_send_messages_to_fill_profile(message: types.Message, state: FSMContext):
     await state.set_state(RegistrationStates.receiving_messages)
     await state.update_data(message_count=0)
-    logger.debug(f"User {message.from_user.id} has started registration.")
+    logger.sync_debug(f"User {message.from_user.id} has started registration.")
     await message.answer(f"Please send {message_tiers_count.MESSAGE_TIERS_COUNT} messages to complete your registration.")
 
 
@@ -84,7 +83,7 @@ async def receiving_messages_on_registration_handler(message: types.Message, sta
         await save_tiered_registration_message(message, message_count)
         await check_message_threshold(message, state, message_count)
     else:
-        logger.error(f"Unexpected state encountered while receiving messages on registration: {state}")
+        await logger.error(msg = f"Unexpected state encountered while receiving messages on registration: {state}", state=state)
 
 
 

@@ -8,8 +8,8 @@ from routers.user_router import user_router
 from bot import bot_instance
 from dispatcher import dispatcher
 
-logger.debug("Bot token: {}".format(BOT_TOKEN))
-logger.debug("Redis URL: {}".format(REDIS_URL))
+logger.sync_debug("Bot token: {}".format(BOT_TOKEN))
+logger.sync_debug("Redis URL: {}".format(REDIS_URL))
 
 async def main():
     # Initialize database
@@ -28,3 +28,4 @@ if __name__ == '__main__':
 #TODO: test reactions cancellation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #TODO: сначала переписать logger так, чтобы он при возможности слал сообщение юзеру тоже
 #TODO: types for functions and arguments
+

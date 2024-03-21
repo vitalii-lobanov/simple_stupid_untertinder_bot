@@ -107,13 +107,9 @@ async def one_more_user_is_ready_to_chat(user_id: int, user_state: FSMContext):
             await user_state.set_state(UserStates.ready_to_chat)
 
     except Exception as e:
-        session.rollback()
-        await bot_instance.send_message(
-            chat_id=current_user_id,
-            text=f"An error occurred in state_user_is_ready_to_chat_handler. Error: {str(e)}",
-        )
-        logger.error(
-            f"Caught exception in state_user_is_ready_to_chat_handler: {str(e)}"
+        session.rollback()        
+        await logger.error(
+            msg=f"Caught exception in state_user_is_ready_to_chat_handler: {str(e)}", state=user_state
         )
         await user_state.set_state(CommonStates.default)
 
@@ -129,7 +125,7 @@ async def user_start_chatting(message: types.Message, state: FSMContext):
 
         if user is None:
             # Handle the case where no user was found
-            logger.error("No user found with ID {}".format(user_id))
+            await logger.error(msg="No user found with ID {}".format(user_id), state=state)
             await message.answer("Your user account was not found.")
             return
 
@@ -138,9 +134,9 @@ async def user_start_chatting(message: types.Message, state: FSMContext):
         )
         session.commit()
         await state.set_state(UserStates.ready_to_chat)
-        logger.debug(
-            f"User {user_id} is ready to chat and user's state is set to {UserStates.ready_to_chat}"
-        )
+        await logger.debug(
+            msg=f"User {user_id} is ready to chat and user's state is set to {UserStates.ready_to_chat}", 
+            state=state)
         await message.answer(
             "You are now ready to chat with someone. Please wait for a partner to connect."
         )
@@ -149,7 +145,7 @@ async def user_start_chatting(message: types.Message, state: FSMContext):
         await one_more_user_is_ready_to_chat(user_id, state)
     except Exception as e:
         session.rollback()
-        logger.error(f"Caught exception in user_start_chatting: {str(e)}")
+        await logger.error(msg=f"Caught exception in user_start_chatting: {str(e)}", state=state)
     finally:
         session.close()
 
@@ -243,7 +239,7 @@ async def state_user_is_in_chatting_progress_handler(
 
     except Exception as e:
         session.rollback()
-        logger.error(f"Caught exception in state_user_is_in_chatting_progress: {str(e)}")
+        await logger.error(msg=f"Caught exception in state_user_is_in_chatting_progress: {str(e)}", state=state)
         # Handle the exception, possibly sending a message back to the user
     finally:
         session.close()
@@ -347,10 +343,10 @@ async def check_conversation_score_threshold(current_score: int, state: FSMConte
         reversed_index = len(profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1 - index
         if (current_score >= tier_threshold) and (current_disclosure_level < reversed_index):
             await __set_disclosure_level__(state, reversed_index)
-            logger.debug(f"Your score is {current_score}. You have reached the {tier_threshold} score threshold at index {index}.")
+            await logger.debug(msg=f"Your score is {current_score}. You have reached the {tier_threshold} score threshold at index {index}.", state=state)
             return reversed_index
     
-    logger.debug(f"Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.")
+    await logger.debug(msg=f"Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.", state=state)
     return False
 
 
@@ -413,7 +409,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
         ).first()
     
     if not conversation:
-        logger.error("Failed to find the conversation where the message was sent")
+        await logger.error(msg="Failed to find the conversation where the message was sent", state = user_context)
         raise SQLAlchemyError ("Failed to find the conversation where the message was sent")  
         return
     
@@ -459,7 +455,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
 
         # Save the reaction
         # TODO: -1 logic from __get_message_sender_id_from_db__()
-        if save_telegram_reaction(
+        if await save_telegram_reaction(
             user_id=message_reaction.user.id,  
             # I do not know why -1 is needed
             message_id=message_reaction.message_id - 1,  
@@ -496,7 +492,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
             
             reached_tier = await check_conversation_score_threshold(current_score=current_score, state=user_context)
             if reached_tier is not False:
-                logger.debug(f"Your score is {current_score}. You have reached the {reached_tier} score threshold.")
+                await logger.debug(msg=f"Your score is {current_score}. You have reached the {reached_tier} score threshold.", chat_id=user_id)
                 await bot_instance.send_message(chat_id=user_id, text=f"""Your score is {current_score}. You have reached the {reached_tier} score threshold. 
                                                 Now you can see a part of your partner's profile.""")
                 
@@ -504,7 +500,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
                 await send_tiered_message_to_user(bot_instance, user_id, partner_id, reached_tier)
 
                 if reached_tier >= len (profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1:
-                    logger.debug(f"Your score is {current_score}. You have reached the last score threshold.")
+                    await logger.debug(msg=f"Your score is {current_score}. You have reached the last score threshold.", chat_id=user_id)
                     await bot_instance.send_message(chat_id=user_id, text="You have reached the last score threshold. Now you can see your partner's profile.")
                     #TODO: handle last tier
                 

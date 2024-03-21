@@ -52,13 +52,13 @@ async def cmd_user_unregister(message: types.Message, state: FSMContext):
 
 @user_router.message(Command(commands=['restart']))
 async def cmd_user_start(message: types.Message):
-    logger.debug("'/start' command received")
+    logger.sync_debug("'/start' command received")
     await cmd_start(message)
 
 
 @user_router.message(Command(commands=['hard_unregister']))
 async def cmd_user_hard_unregister(message: types.Message):
-    logger.debug("'/hard_unregister' command received")
+    logger.sync_debug("'/hard_unregister' command received")
     await cmd_hard_unregister(message)
 
 
@@ -66,48 +66,48 @@ async def cmd_user_hard_unregister(message: types.Message):
 @user_router.message(Command(commands=['register']))
 async def cmd_user_register_start(message: types.Message, state: FSMContext):
     # check whether the user is not in a registration process
-    logger.debug("'/register' command received")
+    logger.sync_debug("'/register' command received")
     await start_registration_handler(message, state)
 
 
 # The user sends message_tiers_count.MESSAGE_TIERS_COUNT messages to complete registration
 @user_router.message(user_is_in_receiving_messages_during_registration_state_filter)
 async def handle_user_receiving_messages_on_registration(message: types.Message, state: FSMContext):
-    logger.debug("Handler for receiving_messages state")
+    logger.sync_debug("Handler for receiving_messages state")
     await receiving_messages_on_registration_handler(message, state)
 
 
 # Default handler for all other messages
 @user_router.message_reaction()
 async def message_user_reaction_handler(message_reaction: types.MessageReactionUpdated, state: FSMContext):
-    logger.debug("Message reaction handler...")
+    logger.sync_debug("Message reaction handler...")
     #if state is UserStates.chatting_in_progress:
     await message_reaction_handler(message_reaction, state)
 
 @user_router.message(Command(commands=['show_my_profile']))
 async def cmd_user_show_my_profile(message: types.Message):
-    logger.debug("'/hard_unregister' command received")
+    logger.sync_debug("'/hard_unregister' command received")
     for i in range(0, message_tiers_count.MESSAGE_TIERS_COUNT):
         await send_tiered_message_to_user(bot_instance, message.from_user.id, i)
 
 
 @user_router.message(Command(commands=['start_chatting']))
 async def cmd_user_start_chatting(message: types.Message, state: FSMContext):    
-    logger.debug("'/start_chatting' command received")
+    logger.sync_debug("'/start_chatting' command received")
     await user_start_chatting(message, state)
     #await state.set_state(UserStates.ready_to_chat)
 
 
 # @user_router.message(user_is_in_ready_for_chatting_state_filter)
 # async def state_user_is_ready_to_chat(message: types.Message, state: FSMContext):
-#     logger.debug("We're inside state_user_is_ready_to_chat")
+#     logger.sync_debug("We're inside state_user_is_ready_to_chat")
 #     await state_user_is_ready_to_chat_handler(message, state)
     
 
 #The user is in a chatting state
 @user_router.message(user_is_in_chatting_in_progress_state_filter)
 async def state_user_is_in_chatting_progress(message: types.Message, state: FSMContext):
-    logger.debug("We're inside state_user_is_in_chatting_progress")
+    logger.sync_debug("We're inside state_user_is_in_chatting_progress")
     await state_user_is_in_chatting_progress_handler(message, state)  
     
 
@@ -131,19 +131,19 @@ async def state_user_is_in_chatting_progress(message: types.Message, state: FSMC
 
 @user_router.message(Command(commands=['stop_chatting']))
 async def cmd_user_stop_chatting(message: types.Message, state: FSMContext):
-    logger.debug("'/stop_chatting' command received")
+    logger.sync_debug("'/stop_chatting' command received")
     await state.set_state(UserStates.not_ready_to_chat)    
     await stop_chatting_command_handler(message, state, True)
 
 @user_router.message(Command(commands=['test']))
 async def  test_delete_me(message: types.Message, state: FSMContext):
-    logger.debug("'/test' command received")
+    logger.sync_debug("'/test' command received")
     await state.set_state(CommonStates.test)
 
 is_in_test_state_filter = InStateFilter(CommonStates.test)
 @user_router.message(is_in_test_state_filter)
 async def  test_delete_me_handler(message: types.Message, state: FSMContext):
-    logger.debug("We'e in test state")
+    logger.sync_debug("We'e in test state")
   #  await message.answer('❤️')
     emoji_reaction = ReactionTypeEmoji(emoji='❤️')
     await message.react([emoji_reaction])

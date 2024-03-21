@@ -92,7 +92,7 @@ async def save_telegram_message(message: types.Message, message_source: MessageS
         session.commit()
     except Exception as e:
         session.rollback()
-        logger.error(f"Failed to save message: {e}")
+        await logger.error(msg=f"Failed to save message: {e}", chat_id=user_id)
     finally:
         session.close()
     
@@ -105,7 +105,7 @@ async def save_telegram_message(message: types.Message, message_source: MessageS
         except Exception as e:
             session.rollback()
             # Assuming you have a logger configured
-            logger.error(f"Failed to save profile data: {e}")
+            await logger.error(msg = f"Failed to save profile data: {e}", chat_id=user_id)
         finally:
             session.close()
 
@@ -118,7 +118,7 @@ async def save_tiered_registration_message(message: types.Message, message_count
     await save_telegram_message(message, message_source, tier)
 
 
-def save_telegram_reaction(user_id, new_emoji, old_emoji=None, timestamp=None, receiver_message_id=None, message_id=None, rank=0):
+async def save_telegram_reaction(user_id, new_emoji, old_emoji=None, timestamp=None, receiver_message_id=None, message_id=None, rank=0):
     try:
         # Create a new database session
         session = SessionLocal()
@@ -138,18 +138,18 @@ def save_telegram_reaction(user_id, new_emoji, old_emoji=None, timestamp=None, r
         # Add the new reaction to the session and commit
         session.add(reaction)
         session.commit()
-        logger.debug(f"Reaction saved: {reaction.id}")
+        logger.sync_debug(f"Reaction saved: {reaction.id}")
         return True
         # Return the created reaction
         return reaction
     except SQLAlchemyError as e:
         # Handle any database errors
-        logger.error(f"SQLAlchemy error saving reaction: {e}")
+        await logger.error(msg=f"SQLAlchemy error saving reaction: {e}", chat_id=user_id)
         session.rollback()
         raise
     except Exception as e:
         # Handle any other exceptions
-        logger.error(f"Error saving reaction: {e}")
+        await logger.error(msg=f"Error saving reaction: {e}", chat_id=user_id)
         session.rollback()
         raise
     finally:

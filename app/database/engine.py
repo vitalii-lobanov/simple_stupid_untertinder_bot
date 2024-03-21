@@ -13,29 +13,29 @@ if os.getenv("LOG_LEVEL") == "DEBUG":
 else:
     engine = create_engine(DATABASE_URI, echo=False)
 
-logger.debug("Database URI: {}".format(DATABASE_URI))
+logger.sync_debug("Database URI: {}".format(DATABASE_URI))
 SessionLocal = sessionmaker(bind=engine)
 
 
 
 def initialize_db():
     try:
-        logger.info("Initializing the database...")
+        logger.sync_info("Initializing the database...")
 
         # Import all models modules here to ensure they are known to Base
         from models import User, Conversation, Message, ProfileData
 
-        logger.info("Models imported successfully.")
+        logger.sync_info("Models imported successfully.")
 
         # Create all tables
-        logger.info("Creating tables...")
+        logger.sync_info("Creating tables...")
         Base.metadata.create_all(bind=engine, checkfirst=True)
-        logger.info("All tables created successfully.")
+        logger.sync_info("All tables created successfully.")
 
 
 
     except Exception as e:
-        logger.error("Failed to create tables: {}".format(e), exc_info=True)
+        logger.sync_error("Failed to create tables: {}".format(e), exc_info=True)
         raise
 
 def get_db_session():
