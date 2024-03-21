@@ -29,9 +29,9 @@ class CustomColorLogger(logging.Logger):
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(colored_formatter)
         self.addHandler(stream_handler)
-        self.forward_messages_to_tg_users = os.getenv("YOUR_ENV_VARIABLE", "False").upper() == "TRUE"
+        self.forward_messages_to_tg_users = os.getenv("FORWARD_DEBUG_MESSAGES_TO_USERS", "False").upper() == "TRUE"
     async def __send_msg_to_user__(self, msg, state: FSMContext = None, chat_id: int = None):
-        message = f"{message_this_is_bot_message()} {msg}"
+        message = f"{msg}"
         if state is not None:
             await send_service_message(bot_instance=bot_instance, message=message, state=state)
         elif chat_id is not None:
@@ -78,3 +78,5 @@ class CustomColorLogger(logging.Logger):
 
     def sync_critical(self, msg, *args, **kwargs):        
         self._log(logging.CRITICAL, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=2, **kwargs)
+
+logger = CustomColorLogger(name="CustomLogger")

@@ -411,13 +411,18 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
     if not conversation:
         await logger.error(msg="Failed to find the conversation where the message was sent", state = user_context)
         raise SQLAlchemyError ("Failed to find the conversation where the message was sent")  
-        return
+        
     
     #Users should not react to their own messages    
     message_from_db = __get_message__from_db__(message_id=message_reaction.message_id, conversation_id=conversation.id)
+    if message_from_db is None:
+        await logger.error(msg="Failed to find the message in the database", state = user_context)
+        raise SQLAlchemyError ("Failed to find the message in the database")
+
     message_sender = message_from_db.sender_in_conversation_id
 
-    # TODO:
+    if message_sender is None:
+        # TODO:
         #А вот тут посмотреть, что делать. None может быть разным: 
         # 1 — когда юзер лайкнул что-то из предыдущей беседы
         # 2 — когда юзер лайкнул сервисное сообщение бота
@@ -426,7 +431,6 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
         # Во втором надо сказать, что бота лайкать не нужно (и не продолжать логику исполнения)
         # В третьем — кинуть не только исключение, но и сообщение юзеру — полезно на тест. 
 
-    if message_sender is None:
         pass
 
     if user_id == message_sender:
