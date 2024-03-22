@@ -25,6 +25,8 @@ if __name__ == '__main__':
     asyncio.run(main())
 
 #TODO: look TODO's
+#TODO: check the starting number for the DB id's (0 or 1)
+#TODO: save all the messages in the database. Use all the handlers. Add saving from logger and bot_service_message
 #TODO: test reactions cancellation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #TODO: сначала переписать logger так, чтобы он при возможности слал сообщение юзеру тоже
 #TODO: types for functions and arguments

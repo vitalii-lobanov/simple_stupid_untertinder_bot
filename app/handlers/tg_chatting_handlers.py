@@ -20,6 +20,8 @@ from aiogram.methods.set_message_reaction import SetMessageReaction
 from services.emoji_rank import EmojiRank
 from services.score_tiers import message_tiers_count, profile_disclosure_tiers_score_levels
 from handlers.tg_user_staging import send_tiered_message_to_user
+from utils.service_messages_sender import send_service_message
+from utils.text_messages import message_this_is_bot_message, message_the_last_tier_reached
 
 
 async def __initialize_states_for_chatter__(state: FSMContext):
@@ -363,12 +365,9 @@ async def access_user_context(chat_id: int, user_id: int, bot_id: int):
 #TODO: check session.close() for all the open sessions
 
 
-def __get_message__from_db__(message_id: int, conversation_id: int) -> Message:
+#TODO: move all the __db__ functions to .services or .database
+def __get_message_for_given_conversation_from_db__(message_id: int, conversation_id: int) -> Message:
     session = SessionLocal()   
- 
-    # messages = session.query(Message)
-    # message = messages.filter_by(message_id = 4687).first()
-    # message = messages.filter_by(id=4687).first()
 
     #TODO: check if this is correct, very dirty hack
     id_to_find = message_id - 1
@@ -382,9 +381,7 @@ def __get_message__from_db__(message_id: int, conversation_id: int) -> Message:
         message_id = message_id, 
         conversation_id = conversation_id
     ).first()
-    session.close()
-
-    
+    session.close()   
     
     # Return the sender_in_conversation_id if the message is found
     if message:
@@ -393,45 +390,74 @@ def __get_message__from_db__(message_id: int, conversation_id: int) -> Message:
         # Handle the case where the message is not found, e.g., return None or raise an exception
         #raise SQLAlchemyError(f"Failed to find the message {message_id} in the database for {conversation_id} conversation.")
         return None
+    
 
-#TODO: handle changing or removing the reactions
-async def message_reaction_handler(message_reaction: types.MessageReactionUpdated, user_context: FSMContext):
-
-    user_id = message_reaction.user.id
-
-   #TODO: forbid to like bot's service messages (not redirected from the chat partner)
-
-    # Find the conversation where the message was sent
+def __get_active_conversation_for_user_from_db__(user_id: int) -> Conversation:
     session = SessionLocal()     
     conversation = session.query(Conversation).filter(
         (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
         Conversation.is_active == True
         ).first()
+    session.close()
+    return conversation
+
+
+def __get_message_in_inactive_conversations_from_db__(message_id: int) -> Message:    
+    session = SessionLocal()    
+    message = (
+    session.query(Message)
+    .join(Conversation, Message.conversation_id == Conversation.id)
+    .filter(
+        Message.id == message_id,
+        Conversation.is_active is False
+    ).first())
+    session.close()
+    return message
+
+
+
+#    
+#TODO: handle changing or removing the reactions
+async def message_reaction_handler(message_reaction: types.MessageReactionUpdated, user_context: FSMContext):
+
+    user_id = message_reaction.user.id
+
+    conversation = __get_active_conversation_for_user_from_db__(user_id = user_id)
     
     if not conversation:
         await logger.error(msg="Failed to find the conversation where the message was sent", state = user_context)
         raise SQLAlchemyError ("Failed to find the conversation where the message was sent")  
         
     
-    #Users should not react to their own messages    
-    message_from_db = __get_message__from_db__(message_id=message_reaction.message_id, conversation_id=conversation.id)
+    
+    message_from_db = __get_message_for_given_conversation_from_db__(message_id=message_reaction.message_id, conversation_id=conversation.id)
     if message_from_db is None:
+        message_from_db = __get_message_in_inactive_conversations_from_db__(message_id=message_reaction.message_id)
+        if message_from_db is not None:
+            await logger.error(msg="It seems the user reacted the message in an inactive conversation", state = user_context)
+            return    
         await logger.error(msg="Failed to find the message in the database", state = user_context)
         raise SQLAlchemyError ("Failed to find the message in the database")
 
+    #Users should not react to their own messages    
     message_sender = message_from_db.sender_in_conversation_id
 
     if message_sender is None:
+        
+
+        await logger.error(msg="Failed to find the message sender in the database for the message was reacted.", state = user_context)
+
         # TODO:
         #А вот тут посмотреть, что делать. None может быть разным: 
-        # 1 — когда юзер лайкнул что-то из предыдущей беседы
+        # Первые два пункта пофиксятся, когда все сообщения будут сохраняться
+        # 1 — когда юзер лайкнул что-то из предыдущей беседы - 
         # 2 — когда юзер лайкнул сервисное сообщение бота
         # 3 — реальная ошибка логики / бота
         # В первом случае надо ему послать сообщение о том, что не надо лайкать предыдущее
         # Во втором надо сказать, что бота лайкать не нужно (и не продолжать логику исполнения)
         # В третьем — кинуть не только исключение, но и сообщение юзеру — полезно на тест. 
 
-        pass
+        return
 
     if user_id == message_sender:
         #TODO: add more user messages text for this (i.e. narcissism)
@@ -457,38 +483,31 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
         ranker = EmojiRank()
         rank = ranker.get_rank(emoji) * inverse_multiplier
 
+        message = __get_message_for_given_conversation_from_db__(message_id=message_reaction.message_id, conversation_id=conversation.id)
+        message_id = message.id
+        
         # Save the reaction
         # TODO: -1 logic from __get_message_sender_id_from_db__()
         if await save_telegram_reaction(
             user_id=message_reaction.user.id,  
             # I do not know why -1 is needed
-            message_id=message_reaction.message_id - 1,  
+            message_id=message_id,
             new_emoji=new_emoji,
             old_emoji=old_emoji,
             timestamp=datetime.now(),    
             rank=rank,    
         ):
             
-   
-                # Identify the other participant in the conversation
+            # Identify the other participant in the conversation and set reaction in his/her chat
             partner_id = conversation.user2_id if conversation.user1_id == user_id else conversation.user1_id
             emoji_reaction = ReactionTypeEmoji(emoji = new_emoji) if new_emoji else None
 
             await bot_instance.set_message_reaction(
                 chat_id=partner_id,
-                message_id=message_reaction.message_id-1,
+                message_id=message_id,
                 reaction=[emoji_reaction] if emoji_reaction else []
             )             
 
-              
-            
-
-                
-
-            #TODO: change any other context access to call custom get context — access_user_context
-
-            #user_context = await access_user_context(chat_id=chat_id, user_id=user_id, bot_id=bot_instance.id)
-          
             current_score = await update_user_score_in_conversation(
                 state = user_context,
                 delta=rank
@@ -505,9 +524,12 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
 
                 if reached_tier >= len (profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1:
                     await logger.debug(msg=f"Your score is {current_score}. You have reached the last score threshold.", chat_id=user_id)
-                    await bot_instance.send_message(chat_id=user_id, text="You have reached the last score threshold. Now you can see your partner's profile.")
-                    #TODO: handle last tier
-                
+                    await send_service_message(bot_instance=bot_instance, 
+                                               message=message_the_last_tier_reached, 
+                                               chat_id=user_id)
+                    await send_service_message(bot_instance=bot_instance, 
+                                               message=message_the_last_tier_reached, 
+                                               chat_id=partner_id)            
 
                 
         else:
