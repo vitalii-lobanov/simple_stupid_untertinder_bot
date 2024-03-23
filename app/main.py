@@ -26,7 +26,8 @@ if __name__ == '__main__':
 
 #TODO: look TODO's
 #TODO: save all the messages in the database. Use all the handlers. Add saving from logger and bot_service_message | ??    
-
+#TODO: states: default and not_ready_to_chat — choose one of them    
+#TODO: handle is_ready_to_chat status for the users in the database according to states changes
 #TODO: check the starting number for the DB id's (0 or 1)
 
 #TODO: test reactions cancellation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

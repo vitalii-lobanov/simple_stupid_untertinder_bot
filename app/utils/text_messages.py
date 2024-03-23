@@ -29,3 +29,21 @@ def message_your_partner_sent_end_command_earlier_and_timer_expired():
 
 def message_this_message_is_forwarded(original_sender_username: str, message_text: str):
     return f"FORWARDED FROM @{original_sender_username}\n\n{message_text}"
+
+def message_user_has_been_unregistered():
+    return "You have been unregistered. Your profile is present in database. You can use '/register' command to start again."
+
+def message_cannot_unregister_not_registered_user():
+    return "You cannot unregister not registered user. You can use '/register' command to start again."
+
+def message_user_has_already_been_hardly_unregistered():
+    return "You have already unregistered. Your profile was removed from database. You can use '/register' command to start again."
+
+def message_reactivation_user_profile_completed():
+    return "Your old profile has been reactivated. Your old messages will be used."
+
+def message_non_registered_users_cannot_start_chatting():
+    return "Non-registered users cannot start chatting. You can use '/register' command to start again."
+
+def message_you_now_ready_to_chat_please_wait_the_partner_to_connect():
+    return "You are now ready to chat. Please wait for your partner to connect."

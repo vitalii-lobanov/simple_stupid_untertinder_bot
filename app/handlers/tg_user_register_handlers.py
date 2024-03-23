@@ -1,6 +1,5 @@
 
 from aiogram.fsm.context import FSMContext
-from database.engine import SessionLocal
 from core.states import  RegistrationStates
 from models.user import User
 from aiogram import types
@@ -8,17 +7,16 @@ from core.states import  CommonStates
 from utils.debug import logger
 from models.message import Message
 from models.base import MessageSource
-from services.dao import save_telegram_message, save_tiered_registration_message
+from services.dao import save_user_to_db, save_tiered_registration_message, get_user_from_db, set_is_active_flag_for_user_in_db
 from services.score_tiers import message_tiers_count
 
 #from app.tasks.tasks import celery_app
 
 # This function will create a new user instance in the database and initiate the message receiving state.
 async def create_new_registration(message: types.Message, state: FSMContext, user_id: int, username: str):
-    session = SessionLocal()
+    #TODO: add profile versioning    
     new_user = User(id=user_id, username=username, is_active=False, is_ready_to_chat=False)
-    session.add(new_user)
-    session.commit()
+    await save_user_to_db(new_user)
     await ask_user_to_send_messages_to_fill_profile(message, state)
 
 
@@ -45,29 +43,13 @@ async def check_message_threshold(message: types.Message, state: FSMContext, mes
 
 async def complete_registration(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
-    session = SessionLocal()
-    try:
-        existing_user = session.query(User).filter_by(id=user_id).first()
-        if existing_user and not existing_user.is_active:
-            existing_user.is_active = True
-            session.commit()
-            await message.answer("Congratulations, your registration is now complete!")
-        else:
-            await message.answer("Unexpected error during registration completion. Please contact support.")
-    except Exception as e:
-        await handle_registration_error(message, state, e)
-    finally:
-        session.close()
-        await state.set_state(CommonStates.default)
-
-
-async def handle_registration_error(message: types.Message, state: FSMContext, exception: Exception):
-    session = SessionLocal()
-    session.rollback()    
-    await logger.error(msg=f'Failed to complete registration: {str(exception)}', state=state)  # Log the exception
+    user = await get_user_from_db(user_id)
+    if user is not None:
+        set_is_active_flag_for_user_in_db(user_id, True)
+    else:        
+        await logger.error(msg="No user found with ID {}", user_id=user_id)
+        raise ValueError(f"No user found with ID {user_id}")
     await state.set_state(CommonStates.default)
-    session.close()
-
 
 # This function will set the FSM state to RegistrationStates.receiving_messages to start receiving messages from the user.
 async def ask_user_to_send_messages_to_fill_profile(message: types.Message, state: FSMContext):

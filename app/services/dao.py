@@ -325,3 +325,103 @@ async def get_tiered_profile_message_from_db(user_id: int = -1, tier: int = -1) 
     finally:
         session.close()
     return tiered_message if tiered_message else None
+
+async def save_user_to_db(user: User):
+    session = SessionLocal()
+    try:
+        session.add(user)
+        session.commit()
+    except SQLAlchemyError as e:
+        session.rollback()
+        await logger.error(msg=f"SQLAlchemy error saving user: {e}")
+        raise e
+    finally:
+        session.close()
+    return True
+
+async def get_user_from_db(user_id: int) -> User:
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == user_id).first()
+    except SQLAlchemyError as e:
+        session.rollback()
+        await logger.error(msg=f"SQLAlchemy error getting user: {e}")
+        raise e
+    finally:
+        session.close()
+    return user if user else None
+
+async def set_is_active_flag_for_user_in_db(user_id: int, is_active: bool) -> bool:
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == user_id).first()
+        if user:
+            user.is_active = is_active
+            session.commit()
+        else:
+            raise ValueError(f"No user found with ID during set_is_active_flag_for_user_in_db: {user_id}")
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+    return True
+
+
+#TODO: implement all exception hangling like here:
+async def set_is_ready_to_chat_flag_for_user_in_db(user_id: int, is_ready_to_chat: bool) -> bool:
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == user_id).first()
+        if user:
+            user.is_ready_to_chat = is_ready_to_chat
+            session.commit()
+        else:
+            raise ValueError(f"No user found with ID during set_is_ready_to_chat_flag_for_user_in_db: {user_id}")
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+    return True
+
+#TODO: implement versioning!
+async def mark_user_as_inactive_in_db(user_id: int) -> bool:    
+    session = SessionLocal()
+    try:
+        existing_user = session.query(User).filter_by(id=user_id).first()
+        if existing_user and existing_user.is_active:
+            # Mark the user as inactive instead of deleting
+            existing_user.is_active = False
+            session.commit()
+            session.close()
+            return True
+        else:            
+            session.close()
+            return False
+    except Exception as e:
+        session.rollback()        
+        await logger.error(msg=f"Unregistration failed: {str(e)}", chat_id=user_id)        
+        raise e
+
+#TODO: implement versioning!
+async def delete_user_profile_from_db(user_id: int) -> bool:    
+    # Create a new database session
+    session = SessionLocal()
+    try:
+        
+        user_profile = session.query(User).filter_by(id=user_id).first()
+        if user_profile:
+            #TODO: add versioning
+            session.delete(user_profile)
+            session.commit()
+            session.close()
+            return True
+        else:
+            return False
+    except Exception as e:
+        session.rollback()
+        session.close()
+        await logger.error(msg=f"Unregistration failed: {str(e)}", chat_id=user_id)
+        raise e    
+    

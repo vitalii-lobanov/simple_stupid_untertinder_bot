@@ -8,7 +8,7 @@ from aiogram.types import ReactionTypeEmoji
 from core.bot import bot_instance
 from sqlalchemy.exc import SQLAlchemyError
 # from app.tasks.tasks import celery_app
-from database.engine import SessionLocal
+
 from core.dispatcher import  dispatcher
 from models import Conversation, Message
 from models.user import User
