@@ -42,7 +42,7 @@ def __link_preview_options_to_dict__(link_preview_options):
 
 #TODO: handle other media types. Especially message_source (enum from base(?))
 
-async def save_telegram_message(message: types.Message, message_source: MessageSource = None, tier: int = -1, conversation_id: int = None):
+async def save_telegram_message(message: types.Message, message_source: MessageSource = None, tier: int = -1, conversation_id: int = None) -> Message:
     user_id = message.from_user.id
     message_id = message.message_id
     session = SessionLocal()
@@ -113,6 +113,8 @@ async def save_telegram_message(message: types.Message, message_source: MessageS
             await logger.error(msg = f"Failed to save profile data: {e}", chat_id=user_id)
         finally:
             session.close()
+
+    return new_message
 
         
 
@@ -190,13 +192,19 @@ async def get_message_for_given_conversation_from_db(message_id: int, conversati
     
 
 async def get_currently_active_conversation_for_user_from_db(user_id: int) -> Conversation:
-    session = SessionLocal()     
-    conversation = session.query(Conversation).filter(
-        (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
-        Conversation.is_active == True
-        ).first()
-    session.close()
-    return conversation
+    session = SessionLocal()
+    try:     
+        conversation = session.query(Conversation).filter(
+            (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
+            Conversation.is_active == True
+            ).first()
+    except SQLAlchemyError as e:
+        session.rollback()
+        await logger.error(msg=f"SQLAlchemy error getting currently active conversation: {e}", user_id=user_id) 
+        conversation = None
+    finally:           
+        session.close()
+        return conversation
 
 
 
@@ -215,7 +223,7 @@ def get_message_in_inactive_conversations_from_db(message_id: int) -> Message:
 
 
 #TODO: naming: get, set, check
-async def get_conversation_partner_from_db(user_id: int = 0):
+async def get_conversation_partner_id_from_db(user_id: int = 0) -> int:
     conversation = await get_currently_active_conversation_for_user_from_db(user_id = user_id)    
     if not conversation:
         return None
@@ -300,3 +308,20 @@ async def create_new_conversation_for_users_in_db(user_id: int, partner_id: int)
         finally:
             session.close()
             return conversation
+
+async def get_tiered_profile_message_from_db(user_id: int = -1, tier: int = -1) -> Message:
+    session = SessionLocal()
+    try:
+        # Query for the message of the given tier
+        tiered_message = session.query(Message).filter_by(user_id=user_id, tier=tier).first()
+    except SQLAlchemyError as e:
+        session.rollback()
+        await logger.error(msg=f"SQLAlchemy error getting tiered profile message: {e}")
+        raise e
+    except Exception as e:
+        session.rollback()
+        await logger.error(msg=f"Error getting tiered profile message: {e}")
+        raise e
+    finally:
+        session.close()
+    return tiered_message if tiered_message else None

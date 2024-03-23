@@ -26,3 +26,6 @@ def message_you_sent_end_command_earlier_and_timer_expired():
 
 def message_your_partner_sent_end_command_earlier_and_timer_expired():
     return "Your partner sent '/next_please' command earlier. The timer expired. Conversation ended."
+
+def message_this_message_is_forwarded(original_sender_username: str, message_text: str):
+    return f"FORWARDED FROM @{original_sender_username}\n\n{message_text}"

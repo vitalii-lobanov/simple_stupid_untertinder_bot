@@ -22,7 +22,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import any_state
 from aiogram.filters import Command
 from filters.custom_filters import InStateFilter
-from handlers.tg_user_staging import send_tiered_message_to_user
+from core.telegram_messaging import send_tiered_parnter_s_message_to_user
 from handlers.tg_chatting_handlers import state_user_is_in_chatting_progress_handler, stop_chatting_command_handler
 from core.bot import bot_instance
 from core.states import  UserStates, CommonStates
@@ -89,7 +89,7 @@ async def cmd_user_show_my_profile(message: types.Message):
     await save_telegram_message(message=message, message_source=MessageSource.command_received)
     logger.sync_debug("'/hard_unregister' command received")
     for i in range(0, message_tiers_count.MESSAGE_TIERS_COUNT):
-        await send_tiered_message_to_user(bot_instance, message.from_user.id, i)
+        await send_tiered_parnter_s_message_to_user(bot_instance, message.from_user.id, i)
 
 
 @user_router.message(Command(commands=['start_chatting']))

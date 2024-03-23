@@ -8,7 +8,6 @@ from aiogram.types import ReactionTypeEmoji
 from core.bot import bot_instance
 from sqlalchemy.exc import SQLAlchemyError
 # from app.tasks.tasks import celery_app
-from database.engine import SessionLocal
 from core.dispatcher import  dispatcher
 from models import Conversation, Message
 from models.user import User
@@ -19,7 +18,7 @@ from models.message import MessageSource
 from aiogram.methods.set_message_reaction import SetMessageReaction
 from services.emoji_rank import EmojiRank
 from services.score_tiers import message_tiers_count, profile_disclosure_tiers_score_levels
-from handlers.tg_user_staging import send_tiered_message_to_user
+from core.telegram_messaging import send_tiered_parnter_s_message_to_user
 from utils.service_messages_sender import send_service_message
 from utils.text_messages import message_this_is_bot_message, message_the_last_tier_reached
 from services.dao import get_currently_active_conversation_for_user_from_db, get_message_for_given_conversation_from_db, get_message_in_inactive_conversations_from_db
@@ -27,7 +26,8 @@ from core.states import  access_user_context
 from handlers.tg_commands import cmd_start_chatting
 from core.states import  initialize_states_for_chatter_to_start_conversation
 from core.states import  get_user_context
-from services.dao import get_new_partner_for_conversation_for_user_from_db, create_new_conversation_for_users_in_db
+from services.dao import get_new_partner_for_conversation_for_user_from_db, create_new_conversation_for_users_in_db, get_conversation_partner_id_from_db
+from core.telegram_messaging import send_reconstructed_telegram_message_to_user
 
 
 async def __set_disclosure_level__(state: FSMContext, level: int):
@@ -96,191 +96,21 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext):
         await state.set_state(CommonStates.default)
         await partner_context.set_state(CommonStates.default)
 
-
-
-
-
-
-# async def state_user_is_ready_to_chat_handler(message: types.Message, state: FSMContext):
-#     session = SessionLocal()
-#     try:
-#         # Step 1: Find a chat partner
-#         current_user_id = message.from_user.id
-
-#         # Query for users who are ready to chat and whom the current user has never chatted with before
-#         potential_partners = session.query(User).filter(
-#             User.is_ready_to_chat == True,
-#             User.id != current_user_id,  # Exclude the current user from the results
-#             ~session.query(Conversation).filter(
-#                 (Conversation.user1_id == current_user_id) & (Conversation.user2_id == User.id) |
-#                 (Conversation.user2_id == current_user_id) & (Conversation.user1_id == User.id)
-#             ).exists()
-#         ).all()
-
-#         # Step 2: Choose a chat partner
-#         if potential_partners:
-#             partner = random.choice(potential_partners)
-
-#             # Step 3: Create a new Conversation instance
-#             conversation = Conversation(user1_id=current_user_id, user2_id=partner.id)
-#             session.add(conversation)
-#             session.commit()
-
-#             #Typically, in Telegram bots, the chat ID is the same as the user ID for private chats.
-#             partner_chat_id = partner.id
-
-#             #Trying to update partner's state
-#             partner_context = FSMContext(dispatcher.storage, partner.id, partner_chat_id)
-#             await partner_context.set_state(UserStates.chatting_in_progress)
-
-#             # Step 4: Inform both users
-#             await message.answer("You are now connected with a chat partner!")
-#             await bot_instance.send_message(chat_id=partner.id, text="Someone became your chat partner!")
-
-#             # Update the state for both users
-#             await state.set_state(UserStates.chatting_in_progress)  # You'll need to define this state
-#             await state.storage.set_state(partner.id, state=UserStates.chatting_in_progress)  # And for the partner
-#         else:
-#             await message.answer("No chat partners available right now. We will iform you when one is available.")
-#             await state.set_state(UserStates.ready_to_chat)
-
-#     except Exception as e:
-#         session.rollback()
-#         await message.answer(f"An error occurred in state_user_is_ready_to_chat_handler. Error: {str(e)}")
-#         await state.set_state(CommonStates.default)
-#         # Log the error
-#     finally:
-#         session.close()
-
-
-async def state_user_is_in_chatting_progress_handler(
-    message: types.Message, state: FSMContext
-):
+async def state_user_is_in_chatting_progress_handler(message: types.Message, state: FSMContext):
+    
     user_id = message.from_user.id
-    session = SessionLocal()
-
-    try:
-        # Query for the active conversation that the user is a part of
-        conversation = (
-            session.query(Conversation)
-            .filter(
-                Conversation.is_active == True,
-                (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
-            )
-            .first()
-        )
-
-        if conversation:
-            # Determine the partner's user ID
-            partner_id = (
-                conversation.user2_id
-                if user_id == conversation.user1_id
-                else conversation.user1_id
-            )
-
-            await save_telegram_message(message=message, message_source=MessageSource.conversation, conversation_id=conversation.id)
-
-            # Construct new Telegram message object(?)_
-            await bot_instance.send_message(chat_id=partner_id, text=message.text)
-            # ... Add handling for other message types (photos, videos, etc.)
+    conversation = get_currently_active_conversation_for_user_from_db(user_id=user_id)
+    if conversation is not None:
+        partner_id = get_conversation_partner_id_from_db(user_id=user_id)
+        if partner_id is not None:
+            reconstructed_message = await save_telegram_message(message=message, message_source=MessageSource.conversation, conversation_id=conversation.id)
+            await send_reconstructed_telegram_message_to_user(message=reconstructed_message, user_id=partner_id)
         else:
-            await message.answer(
-                "You are not currently in an active conversation. Please contact support."
-            )
-
-    except Exception as e:
-        session.rollback()
-        await logger.error(msg=f"Caught exception in state_user_is_in_chatting_progress: {str(e)}", state=state)
-        # Handle the exception, possibly sending a message back to the user
-    finally:
-        session.close()
+            await logger.error(msg="Partner ID is None in state_user_is_in_chatting_progress_handler. Please contact support.")
+    else:
+        await logger.error(msg="Conversation is None in state_user_is_in_chatting_progress_handler. Please contact support.")        
 
 
-# async def stop_chatting_command_handler(
-#     message: types.Message, state: FSMContext, hard_type: bool = False
-# ):
-#     user_id = message.from_user.id
-#     session = SessionLocal()
-
-#     # Check if the user is in chatting_in_progress state
-#     current_state = await state.get_state()
-#     if current_state != UserStates.chatting_in_progress:
-
-#         #TODO: message.answer — change to logger + text-2-func
-#         await message.answer(
-#             "You are not currently in a conversation. You can use '/start_chatting' to start one."
-#         )
-#         return
-
-#     try:
-#         # Query for the active conversation for the user
-#         conversation = (
-#             session.query(Conversation)
-#             .filter(
-#                 Conversation.is_active == True,
-#                 (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
-#             )
-#             .first()
-#         )
-
-#         if conversation:
-#             # Retrieve the partner's user ID before setting is_active to False or deleting
-#             partner_id = (
-#                 conversation.user2_id
-#                 if user_id == conversation.user1_id
-#                 else conversation.user1_id
-#             )
-
-#             # Set 'is_active' attribute to False or delete if hard_type is True
-#             if hard_type:
-#                 session.delete(conversation)
-#             else:
-#                 conversation.is_active = False
-
-#             session.commit()
-
-#             # Notify both users that the conversation has ended
-#             await message.answer("The conversation has been finished.")
-#             await bot_instance.send_message(
-#                 chat_id=partner_id, text="Your partner has stopped the conversation."
-#             )
-
-#             await state.set_state(UserStates.not_ready_to_chat)
-#             current_user = session.query(User).filter(User.id == user_id).first()
-#             if current_user:
-#                 current_user.is_ready_to_chat = False
-#                 session.commit()
-#             else:
-#                 session.rollback()
-#                 await message.answer("Failed to update user status in the database.")
-#                 return
-
-#             # Update the state for the partner
-#             partner_state = dispatcher.current_state(chat=partner_id, user=partner_id)
-#             await partner_state.set_state(UserStates.not_ready_to_chat)
-
-#             partner_user = session.query(User).filter(User.id == partner_id).first()
-#             if partner_user:
-#                 partner_user.is_ready_to_chat = False
-#                 session.commit()
-#             else:
-#                 session.rollback()
-#                 await message.answer(
-#                     "Failed to update partner's status in the database."
-#                 )
-#                 return
-
-#         else:
-#             await message.answer("You are not currently in an active conversation.")
-
-#     except Exception as e:
-#         session.rollback()
-#         # Handle the exception
-#         await message.answer(
-#             f"An error occurred while stopping the conversation: {str(e)}"
-#         )
-#     finally:
-#         session.close()
 
 
 async def update_user_score_in_conversation(state: FSMContext, delta: float):    
@@ -406,7 +236,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
                                                 Now you can see a part of your partner's profile.""")
                 
                 #TODO: Change all the parameters everywhere for named arguments instead of positional
-                await send_tiered_message_to_user(bot_instance, user_id, partner_id, reached_tier)
+                await send_tiered_parnter_s_message_to_user(bot_instance, user_id, partner_id, reached_tier)
 
                 if reached_tier >= len (profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1:
                     await logger.debug(msg=f"Your score is {current_score}. You have reached the last score threshold.", chat_id=user_id)

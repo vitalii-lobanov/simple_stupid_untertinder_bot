@@ -19,14 +19,14 @@ from models.message import MessageSource
 from aiogram.methods.set_message_reaction import SetMessageReaction
 from services.emoji_rank import EmojiRank
 from services.score_tiers import message_tiers_count, profile_disclosure_tiers_score_levels
-from handlers.tg_user_staging import send_tiered_message_to_user
+from core.telegram_messaging import send_tiered_parnter_s_message_to_user
 from utils.service_messages_sender import send_service_message
 from utils.text_messages import message_this_is_bot_message, message_the_last_tier_reached
 from services.dao import get_currently_active_conversation_for_user_from_db, get_message_for_given_conversation_from_db, get_message_in_inactive_conversations_from_db
 import asyncio
 from utils.text_messages import message_you_are_not_in_chatting_state, message_you_send_end_command_and_your_partner_has_sent_it_earlier, message_you_sent_end_command_earlier_and_your_just_sent_it_now
 from core.states import  access_user_context
-from services.dao import get_conversation_partner_from_db, set_conversation_inactive
+from services.dao import get_conversation_partner_id_from_db, set_conversation_inactive
 from config import NEXT_PLEASE_WAITING_TIMEOUT
 from services.dao import is_conversation_active
 from utils.text_messages import message_you_sent_end_command_earlier_and_timer_expired, message_your_partner_sent_end_command_earlier_and_timer_expired
@@ -52,7 +52,7 @@ async def __close_up_conversation__(message: types.Message, state: FSMContext, t
         return
 
  
-    partner_id = await get_conversation_partner_from_db(user_id = user_id)
+    partner_id = await get_conversation_partner_id_from_db(user_id = user_id)
  
     partner_context = await access_user_context(chat_id=partner_id, user_id=partner_id, bot_id=bot_instance.id)
     partner_state = await partner_context.get_state()
@@ -87,7 +87,7 @@ async def next_please_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     await state.set_state(UserStates.wants_to_end_chatting)  
 
-    partner_id = await get_conversation_partner_from_db(user_id = user_id)
+    partner_id = await get_conversation_partner_id_from_db(user_id = user_id)
     
     if partner_id is None:
         await logger.error(msg="Failed to find the partner's user ID during /next_please", state = state)
