@@ -6,10 +6,14 @@ from models.base import MessageSource
 from models.reaction import Reaction
 from sqlalchemy.exc import SQLAlchemyError
 from models import ProfileData
-from models import Conversation, Message
+from models import Conversation
+import random
+from datetime import datetime
+from models.user import User
 
 
-def message_entities_to_dict(entities):
+
+def __message_entities_to_dict__(entities):
     return [
         {
             'type': entity.type,
@@ -22,7 +26,7 @@ def message_entities_to_dict(entities):
         for entity in entities
     ] if entities else None
 
-def link_preview_options_to_dict(link_preview_options):
+def __link_preview_options_to_dict__(link_preview_options):
     if link_preview_options is not None:
         # Ensure that is_disabled is assigned a boolean value, not an instance of `Default`
         is_disabled = link_preview_options.is_disabled if isinstance(link_preview_options.is_disabled, bool) else False
@@ -34,7 +38,7 @@ def link_preview_options_to_dict(link_preview_options):
         }
     return 
 
-
+22
 
 #TODO: handle other media types. Especially message_source (enum from base(?))
 
@@ -66,8 +70,8 @@ async def save_telegram_message(message: types.Message, message_source: MessageS
             caption=message.caption if message.caption else None,
             #caption_entities=message.caption_entities if message.caption_entities else None,
             #entities=message.entities if message.entities else None,
-            caption_entities=message_entities_to_dict(message.caption_entities) if message.caption_entities else None,
-            entities=message_entities_to_dict(message.entities) if message.entities else None,
+            caption_entities=__message_entities_to_dict__(message.caption_entities) if message.caption_entities else None,
+            entities=__message_entities_to_dict__(message.entities) if message.entities else None,
             contact=message.contact if message.contact else None,
             forward_date=message.forward_date if message.forward_date else None,
             from_user= str(message.from_user).encode() if message.from_user else None,
@@ -76,7 +80,7 @@ async def save_telegram_message(message: types.Message, message_source: MessageS
             html_text=message.html_text if  message.html_text else None,
             invoice=message.invoice if message.invoice else None,
             location=message.location if message.location else None,
-            link_preview_options=link_preview_options_to_dict(message.link_preview_options) if message.link_preview_options else None,
+            link_preview_options=__link_preview_options_to_dict__(message.link_preview_options) if message.link_preview_options else None,
             md_text=message.md_text if message.md_text else None,
             media_group_id=message.media_group_id if message.media_group_id else None,
             original_sender_id=message.forward_from.id if message.forward_from else None,
@@ -157,10 +161,9 @@ async def save_telegram_reaction(user_id, new_emoji, old_emoji=None, timestamp=N
         # Close the session
         session.close()
 
-#TODO: check session.close() for all the open sessions
 
-#TODO: move all the __db__ functions to .services or .database
-def get_message_for_given_conversation_from_db(message_id: int, conversation_id: int) -> Message:
+
+async def get_message_for_given_conversation_from_db(message_id: int, conversation_id: int) -> Message:
     session = SessionLocal()   
 
     #TODO: check if this is correct, very dirty hack
@@ -186,7 +189,7 @@ def get_message_for_given_conversation_from_db(message_id: int, conversation_id:
         return None
     
 
-def get_currently_active_conversation_for_user_from_db(user_id: int) -> Conversation:
+async def get_currently_active_conversation_for_user_from_db(user_id: int) -> Conversation:
     session = SessionLocal()     
     conversation = session.query(Conversation).filter(
         (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
@@ -212,15 +215,15 @@ def get_message_in_inactive_conversations_from_db(message_id: int) -> Message:
 
 
 #TODO: naming: get, set, check
-def get_conversation_partner_from_db(user_id: int = 0):
-    conversation = get_currently_active_conversation_for_user_from_db(user_id = user_id)    
+async def get_conversation_partner_from_db(user_id: int = 0):
+    conversation = await get_currently_active_conversation_for_user_from_db(user_id = user_id)    
     if not conversation:
         return None
     partner_id = conversation.user2_id if conversation.user1_id == user_id else conversation.user1_id
     return partner_id
 
 
-def is_conversation_active(conversation_id: int) -> bool:
+async def is_conversation_active(conversation_id: int) -> bool:
     session = SessionLocal()
     try:
         # Query the conversation by ID
@@ -233,7 +236,7 @@ def is_conversation_active(conversation_id: int) -> bool:
     finally:
         session.close()
 
-def set_conversation_inactive(conversation_id: int) -> None:
+async def set_conversation_inactive(conversation_id: int) -> None:
     session = SessionLocal()
     try:
         conversation = session.query(Conversation).filter(Conversation.id == conversation_id).first()
@@ -247,3 +250,53 @@ def set_conversation_inactive(conversation_id: int) -> None:
         raise e
     finally:
         session.close()
+
+
+# TODO: externalize database work in dao.py
+
+async def get_new_partner_for_conversation_for_user_from_db(user_id):
+    session = SessionLocal()
+    # Step 1: Find a chat partner
+    # Query for users who are ready to chat and whom the current user has never chatted with before
+    potential_partners = (
+        session.query(User)
+        .filter(
+            User.is_ready_to_chat == True,
+            User.id != user_id,  # Exclude the current user from the results
+            ~session.query(Conversation)
+            .filter(
+                (Conversation.user1_id == user_id)
+                & (Conversation.user2_id == User.id)
+                | (Conversation.user2_id == user_id)
+                & (Conversation.user1_id == User.id)
+            )
+            .exists(),
+        )
+        .all()
+    )
+
+    session.close()
+    # Step 2: Choose a chat partner
+    if potential_partners:
+        partner = random.choice(potential_partners)
+        return partner
+    else:        
+        return None
+    
+
+async def create_new_conversation_for_users_in_db(user_id: int, partner_id: int):
+        session = SessionLocal()
+        conversation = None
+        try:
+            conversation = Conversation(user1_id=user_id, user2_id=partner_id,start_time=datetime.now(),is_active=True)
+            session.add(conversation)
+            session.commit()                    
+
+        except SQLAlchemyError as e:
+            session.rollback()
+            await logger.error(msg=f"SQLAlchemy error creating new conversation: {e}", chat_id=user_id)
+            await logger.error(msg=f"SQLAlchemy error creating new conversation: {e}", chat_id=partner_id)
+            raise e
+        finally:
+            session.close()
+            return conversation

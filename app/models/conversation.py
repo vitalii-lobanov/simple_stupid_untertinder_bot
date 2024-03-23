@@ -6,7 +6,9 @@ class Conversation(Base):
     __tablename__ = 'conversations'
     id = Column(Integer, primary_key=True)
     user1_id = Column(Integer, ForeignKey('users.id'))
-    user2_id = Column(Integer, ForeignKey('users.id'))
+    user1_profile_version = Column(Integer)
+    user2_id = Column(Integer, ForeignKey('users.id'))    
+    user2_profile_version = Column(Integer)
     start_time = Column(DateTime)
     end_time = Column(DateTime, nullable=True, default=None)
     is_active = Column(Boolean, default=True, nullable=False)

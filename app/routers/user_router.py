@@ -7,14 +7,14 @@ from handlers.tg_commands import cmd_start
 
 #from handlers.tg_commands import message_reaction_handler
 from handlers.tg_user_unregister_handlers import cmd_unregister
-from handlers.tg_user_register_handlers import start_registration_handler
+from handlers.tg_commands import cmd_register
 from handlers.tg_user_register_handlers import receiving_messages_on_registration_handler
 from handlers.tg_user_unregister_handlers import cmd_hard_unregister
 
-from handlers.tg_chatting_handlers import user_start_chatting #, state_user_is_ready_to_chat_handler
+from handlers.tg_chatting_handlers import cmd_start_chatting #, state_user_is_ready_to_chat_handler
 
 from aiogram import Dispatcher, types
-from states import RegistrationStates
+from core.states import  RegistrationStates
 from utils.debug import logger
 # registration_handlers.py
 from aiogram import types, Router
@@ -24,12 +24,15 @@ from aiogram.filters import Command
 from filters.custom_filters import InStateFilter
 from handlers.tg_user_staging import send_tiered_message_to_user
 from handlers.tg_chatting_handlers import state_user_is_in_chatting_progress_handler, stop_chatting_command_handler
-from bot import bot_instance
-from states import UserStates, CommonStates
+from core.bot import bot_instance
+from core.states import  UserStates, CommonStates
 from aiogram.types import ReactionTypeEmoji
 from handlers.tg_chatting_handlers import message_reaction_handler
 from services.score_tiers import message_tiers_count
 from handlers.tg_partner_change_handlers import next_please_handler
+from services.dao import save_telegram_message
+from models.base import MessageSource
+
 
 #bot_instance = None
 
@@ -49,10 +52,12 @@ user_router = Router()
 
 @user_router.message(Command(commands=['unregister']))
 async def cmd_user_unregister(message: types.Message, state: FSMContext):
+    await save_telegram_message(message=message, message_source=MessageSource.command_received)
     await cmd_unregister(message)
 
 @user_router.message(Command(commands=['start']))
 async def cmd_user_start(message: types.Message):
+    await save_telegram_message(message=message, message_source=MessageSource.command_received)
     logger.sync_debug("'/start' command received")
     await cmd_start(message)
 
@@ -60,6 +65,7 @@ async def cmd_user_start(message: types.Message):
 #TODO: all the command handlers rename to cmd_*
 @user_router.message(Command(commands=['hard_unregister']))
 async def cmd_user_hard_unregister(message: types.Message):
+    await save_telegram_message(message=message, message_source=MessageSource.command_received)
     logger.sync_debug("'/hard_unregister' command received")
     await cmd_hard_unregister(message)
 
@@ -67,16 +73,31 @@ async def cmd_user_hard_unregister(message: types.Message):
 # The user starts a registration process
 @user_router.message(Command(commands=['register']))
 async def cmd_user_register_start(message: types.Message, state: FSMContext):
-    # check whether the user is not in a registration process
+    await save_telegram_message(message=message, message_source=MessageSource.command_received)
     logger.sync_debug("'/register' command received")
-    await start_registration_handler(message, state)
+    await cmd_register(message, state)
 
 
 @user_router.message(Command(commands=['next_please']))
 async def cmd_next_please(message: types.Message, state: FSMContext):
-    # check whether the user is not in a registration process
+    await save_telegram_message(message=message, message_source=MessageSource.command_received)
     logger.sync_debug("'/next_please' command received")
     await next_please_handler(message, state)
+
+@user_router.message(Command(commands=['show_my_profile']))
+async def cmd_user_show_my_profile(message: types.Message):
+    await save_telegram_message(message=message, message_source=MessageSource.command_received)
+    logger.sync_debug("'/hard_unregister' command received")
+    for i in range(0, message_tiers_count.MESSAGE_TIERS_COUNT):
+        await send_tiered_message_to_user(bot_instance, message.from_user.id, i)
+
+
+@user_router.message(Command(commands=['start_chatting']))
+async def cmd_cmd_start_chatting(message: types.Message, state: FSMContext):    
+    await save_telegram_message(message=message, message_source=MessageSource.command_received)
+    logger.sync_debug("'/start_chatting' command received")
+    await cmd_start_chatting(message, state)
+    #await state.set_state(UserStates.ready_to_chat)
 
 
 # The user sends message_tiers_count.MESSAGE_TIERS_COUNT messages to complete registration
@@ -93,25 +114,6 @@ async def message_user_reaction_handler(message_reaction: types.MessageReactionU
     #if state is UserStates.chatting_in_progress:
     await message_reaction_handler(message_reaction, state)
 
-@user_router.message(Command(commands=['show_my_profile']))
-async def cmd_user_show_my_profile(message: types.Message):
-    logger.sync_debug("'/hard_unregister' command received")
-    for i in range(0, message_tiers_count.MESSAGE_TIERS_COUNT):
-        await send_tiered_message_to_user(bot_instance, message.from_user.id, i)
-
-
-@user_router.message(Command(commands=['start_chatting']))
-async def cmd_user_start_chatting(message: types.Message, state: FSMContext):    
-    logger.sync_debug("'/start_chatting' command received")
-    await user_start_chatting(message, state)
-    #await state.set_state(UserStates.ready_to_chat)
-
-
-# @user_router.message(user_is_in_ready_for_chatting_state_filter)
-# async def state_user_is_ready_to_chat(message: types.Message, state: FSMContext):
-#     logger.sync_debug("We're inside state_user_is_ready_to_chat")
-#     await state_user_is_ready_to_chat_handler(message, state)
-    
 
 #The user is in a chatting state
 @user_router.message(user_is_in_chatting_in_progress_state_filter)
@@ -128,33 +130,17 @@ async def state_user_is_in_chatting_progress(message: types.Message, state: FSMC
 
 
 
-
-
-
-
-
-
-
-
 #TODO: REMOVE, testing artefacts ==========================
 
-@user_router.message(Command(commands=['stop_chatting']))
-async def cmd_user_stop_chatting(message: types.Message, state: FSMContext):
-    logger.sync_debug("'/stop_chatting' command received")
-    await state.set_state(UserStates.not_ready_to_chat)    
-    await stop_chatting_command_handler(message, state, True)
+# @user_router.message(Command(commands=['stop_chatting']))
+# async def cmd_user_stop_chatting(message: types.Message, state: FSMContext):
+#     logger.sync_debug("'/stop_chatting' command received")
+#     await state.set_state(UserStates.not_ready_to_chat)    
+#     await stop_chatting_command_handler(message, state, True)
 
 @user_router.message(Command(commands=['test']))
 async def  test_delete_me(message: types.Message, state: FSMContext):
+    await save_telegram_message(message=message, message_source=MessageSource.command_received)
     logger.sync_debug("'/test' command received")
     await state.set_state(CommonStates.test)
 
-is_in_test_state_filter = InStateFilter(CommonStates.test)
-@user_router.message(is_in_test_state_filter)
-async def  test_delete_me_handler(message: types.Message, state: FSMContext):
-    logger.sync_debug("We'e in test state")
-  #  await message.answer('❤️')
-    emoji_reaction = ReactionTypeEmoji(emoji='❤️')
-    await message.react([emoji_reaction])
-    await message.reply("Replying with a heart")
-    await message.answer("Replying with a heart and with an answer")

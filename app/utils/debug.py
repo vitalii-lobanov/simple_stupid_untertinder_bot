@@ -2,7 +2,7 @@ import logging
 import colorlog
 from utils.service_messages_sender import send_service_message
 from aiogram.fsm.context import FSMContext
-from bot import bot_instance
+from core.bot import bot_instance
 from utils.text_messages import message_this_is_bot_message
 import os
 
