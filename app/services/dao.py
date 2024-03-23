@@ -6,6 +6,7 @@ from models.base import MessageSource
 from models.reaction import Reaction
 from sqlalchemy.exc import SQLAlchemyError
 from models import ProfileData
+from models import Conversation, Message
 
 
 def message_entities_to_dict(entities):
@@ -154,4 +155,95 @@ async def save_telegram_reaction(user_id, new_emoji, old_emoji=None, timestamp=N
         raise
     finally:
         # Close the session
+        session.close()
+
+#TODO: check session.close() for all the open sessions
+
+#TODO: move all the __db__ functions to .services or .database
+def get_message_for_given_conversation_from_db(message_id: int, conversation_id: int) -> Message:
+    session = SessionLocal()   
+
+    #TODO: check if this is correct, very dirty hack
+    id_to_find = message_id - 1
+
+    #TODO: check if this is correct, very dirty hack
+    #TODO: if correct, create a separate function for this
+    message = session.query(Message).filter_by(
+        message_id = id_to_find, 
+        conversation_id = conversation_id
+    ).first() or session.query(Message).filter_by(
+        message_id = message_id, 
+        conversation_id = conversation_id
+    ).first()
+    session.close()   
+    
+    # Return the sender_in_conversation_id if the message is found
+    if message:
+        return message
+    else:
+        # Handle the case where the message is not found, e.g., return None or raise an exception
+        #raise SQLAlchemyError(f"Failed to find the message {message_id} in the database for {conversation_id} conversation.")
+        return None
+    
+
+def get_currently_active_conversation_for_user_from_db(user_id: int) -> Conversation:
+    session = SessionLocal()     
+    conversation = session.query(Conversation).filter(
+        (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
+        Conversation.is_active == True
+        ).first()
+    session.close()
+    return conversation
+
+
+
+#TODO: make all these __db__ functions async
+def get_message_in_inactive_conversations_from_db(message_id: int) -> Message:    
+    session = SessionLocal()    
+    message = (
+    session.query(Message)
+    .join(Conversation, Message.conversation_id == Conversation.id)
+    .filter(
+        Message.id == message_id,
+        Conversation.is_active is False
+    ).first())
+    session.close()
+    return message
+
+
+#TODO: naming: get, set, check
+def get_conversation_partner_from_db(user_id: int = 0):
+    conversation = get_currently_active_conversation_for_user_from_db(user_id = user_id)    
+    if not conversation:
+        return None
+    partner_id = conversation.user2_id if conversation.user1_id == user_id else conversation.user1_id
+    return partner_id
+
+
+def is_conversation_active(conversation_id: int) -> bool:
+    session = SessionLocal()
+    try:
+        # Query the conversation by ID
+        conversation = session.query(Conversation).filter(Conversation.id == conversation_id).first()
+        # Return the is_active status if the conversation is found
+        return conversation.is_active if conversation else False
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+def set_conversation_inactive(conversation_id: int) -> None:
+    session = SessionLocal()
+    try:
+        conversation = session.query(Conversation).filter(Conversation.id == conversation_id).first()
+        if conversation:
+            conversation.is_active = False
+            session.commit()
+        else:
+            raise ValueError(f"No conversation found with ID {conversation_id}")
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
         session.close()

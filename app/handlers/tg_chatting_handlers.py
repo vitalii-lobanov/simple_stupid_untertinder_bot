@@ -22,7 +22,8 @@ from services.score_tiers import message_tiers_count, profile_disclosure_tiers_s
 from handlers.tg_user_staging import send_tiered_message_to_user
 from utils.service_messages_sender import send_service_message
 from utils.text_messages import message_this_is_bot_message, message_the_last_tier_reached
-
+from services.dao import get_currently_active_conversation_for_user_from_db, get_message_for_given_conversation_from_db, get_message_in_inactive_conversations_from_db
+from states import access_user_context
 
 async def __initialize_states_for_chatter__(state: FSMContext):
         await state.update_data(current_score=0)
@@ -76,8 +77,9 @@ async def one_more_user_is_ready_to_chat(user_id: int, user_state: FSMContext):
 
             # Typically, in Telegram bots, the chat ID is the same as the user ID for private chats.
             partner_chat_id = partner.id
-
             # Update the state for both users
+            
+            #TODO: externalize this to a function
             await user_state.set_state(
                 UserStates.chatting_in_progress
             )  # You'll need to define this state
@@ -256,6 +258,8 @@ async def stop_chatting_command_handler(
     # Check if the user is in chatting_in_progress state
     current_state = await state.get_state()
     if current_state != UserStates.chatting_in_progress:
+
+        #TODO: message.answer — change to logger + text-2-func
         await message.answer(
             "You are not currently in a conversation. You can use '/start_chatting' to start one."
         )
@@ -351,78 +355,13 @@ async def check_conversation_score_threshold(current_score: int, state: FSMConte
     await logger.debug(msg=f"Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.", state=state)
     return False
 
-
-async def access_user_context(chat_id: int, user_id: int, bot_id: int):
-        user_context = FSMContext(
-        dispatcher.storage,
-        StorageKey(
-            chat_id=chat_id, user_id=user_id, bot_id=bot_id
-        ),
-            )
-        return user_context
-
-
-#TODO: check session.close() for all the open sessions
-
-
-#TODO: move all the __db__ functions to .services or .database
-def __get_message_for_given_conversation_from_db__(message_id: int, conversation_id: int) -> Message:
-    session = SessionLocal()   
-
-    #TODO: check if this is correct, very dirty hack
-    id_to_find = message_id - 1
-
-    #TODO: check if this is correct, very dirty hack
-    #TODO: if correct, create a separate function for this
-    message = session.query(Message).filter_by(
-        message_id = id_to_find, 
-        conversation_id = conversation_id
-    ).first() or session.query(Message).filter_by(
-        message_id = message_id, 
-        conversation_id = conversation_id
-    ).first()
-    session.close()   
-    
-    # Return the sender_in_conversation_id if the message is found
-    if message:
-        return message
-    else:
-        # Handle the case where the message is not found, e.g., return None or raise an exception
-        #raise SQLAlchemyError(f"Failed to find the message {message_id} in the database for {conversation_id} conversation.")
-        return None
-    
-
-def __get_active_conversation_for_user_from_db__(user_id: int) -> Conversation:
-    session = SessionLocal()     
-    conversation = session.query(Conversation).filter(
-        (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
-        Conversation.is_active == True
-        ).first()
-    session.close()
-    return conversation
-
-
-def __get_message_in_inactive_conversations_from_db__(message_id: int) -> Message:    
-    session = SessionLocal()    
-    message = (
-    session.query(Message)
-    .join(Conversation, Message.conversation_id == Conversation.id)
-    .filter(
-        Message.id == message_id,
-        Conversation.is_active is False
-    ).first())
-    session.close()
-    return message
-
-
-
 #    
 #TODO: handle changing or removing the reactions
 async def message_reaction_handler(message_reaction: types.MessageReactionUpdated, user_context: FSMContext):
 
     user_id = message_reaction.user.id
 
-    conversation = __get_active_conversation_for_user_from_db__(user_id = user_id)
+    conversation = get_currently_active_conversation_for_user_from_db(user_id = user_id)
     
     if not conversation:
         await logger.error(msg="Failed to find the conversation where the message was sent", state = user_context)
@@ -430,9 +369,9 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
         
     
     
-    message_from_db = __get_message_for_given_conversation_from_db__(message_id=message_reaction.message_id, conversation_id=conversation.id)
+    message_from_db = get_message_for_given_conversation_from_db(message_id=message_reaction.message_id, conversation_id=conversation.id)
     if message_from_db is None:
-        message_from_db = __get_message_in_inactive_conversations_from_db__(message_id=message_reaction.message_id)
+        message_from_db = get_message_in_inactive_conversations_from_db(message_id=message_reaction.message_id)
         if message_from_db is not None:
             await logger.error(msg="It seems the user reacted the message in an inactive conversation", state = user_context)
             return    
@@ -483,7 +422,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
         ranker = EmojiRank()
         rank = ranker.get_rank(emoji) * inverse_multiplier
 
-        message = __get_message_for_given_conversation_from_db__(message_id=message_reaction.message_id, conversation_id=conversation.id)
+        message = get_message_for_given_conversation_from_db(message_id=message_reaction.message_id, conversation_id=conversation.id)
         message_id = message.id
         
         # Save the reaction

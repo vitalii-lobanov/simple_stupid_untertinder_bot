@@ -29,6 +29,7 @@ from states import UserStates, CommonStates
 from aiogram.types import ReactionTypeEmoji
 from handlers.tg_chatting_handlers import message_reaction_handler
 from services.score_tiers import message_tiers_count
+from handlers.tg_partner_change_handlers import next_please_handler
 
 #bot_instance = None
 
@@ -50,12 +51,13 @@ user_router = Router()
 async def cmd_user_unregister(message: types.Message, state: FSMContext):
     await cmd_unregister(message)
 
-@user_router.message(Command(commands=['restart']))
+@user_router.message(Command(commands=['start']))
 async def cmd_user_start(message: types.Message):
     logger.sync_debug("'/start' command received")
     await cmd_start(message)
 
 
+#TODO: all the command handlers rename to cmd_*
 @user_router.message(Command(commands=['hard_unregister']))
 async def cmd_user_hard_unregister(message: types.Message):
     logger.sync_debug("'/hard_unregister' command received")
@@ -68,6 +70,13 @@ async def cmd_user_register_start(message: types.Message, state: FSMContext):
     # check whether the user is not in a registration process
     logger.sync_debug("'/register' command received")
     await start_registration_handler(message, state)
+
+
+@user_router.message(Command(commands=['next_please']))
+async def cmd_next_please(message: types.Message, state: FSMContext):
+    # check whether the user is not in a registration process
+    logger.sync_debug("'/next_please' command received")
+    await next_please_handler(message, state)
 
 
 # The user sends message_tiers_count.MESSAGE_TIERS_COUNT messages to complete registration

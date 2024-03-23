@@ -11,3 +11,18 @@ def message_this_is_bot_message():
 
 def message_the_last_tier_reached():
     return "You have reached the last score threshold. You can continue chat with the current partner or use /next_please command to try again."
+
+def message_you_are_not_in_chatting_state():
+    return "You are not currently in a conversation. You can use '/start_chatting' to start one."
+
+def message_you_send_end_command_and_your_partner_has_sent_it_earlier():
+    return "You sent '/next_please' command. Your partner has sent it earlier. Conversation ended."
+
+def message_you_sent_end_command_earlier_and_your_just_sent_it_now():
+    return "You sent '/next_please' command earlier. Your partner just sent it now. Conversation ended."
+
+def message_you_sent_end_command_earlier_and_timer_expired():
+    return "You sent '/next_please' command earlier. The timer expired. Conversation ended."
+
+def message_your_partner_sent_end_command_earlier_and_timer_expired():
+    return "Your partner sent '/next_please' command earlier. The timer expired. Conversation ended."
