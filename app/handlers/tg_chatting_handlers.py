@@ -64,7 +64,7 @@ async def __get_disclosure_level__(
 
 async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> None:
     # TODO: test this logic!
-    user_readiness = await state.get_state
+    user_readiness = await state.get_state()
     if user_readiness != UserStates.ready_to_chat:
         return
 
@@ -75,6 +75,7 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
                 message=message_no_partners_ready_to_chat_available_we_will_inform_you_later(),
                 chat_id=user_id,
             )
+            return
 
         # TODO: why ready_to_chat? It should be chatting_in_progress | COMMENTED WITHOUT TEST!!!
         # await state.set_state(UserStates.ready_to_chat)

@@ -65,6 +65,11 @@ class Message(Base):
     profile_data = relationship(
         "ProfileData", order_by=ProfileData.id, back_populates="message"
     )
+    # reactions = relationship(
+    #     "Reaction", backref="message_reactions", foreign_keys="[Reaction.message_id]"
+    # )
     reactions = relationship(
-        "Reaction", backref="message_reactions", foreign_keys="[Reaction.message_id]"
+        "Reaction",
+        back_populates="message",
+        foreign_keys="[Reaction.message_id]"
     )

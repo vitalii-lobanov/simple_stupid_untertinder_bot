@@ -376,6 +376,26 @@ async def get_user_is_active_status_from_db(user_id: int) -> bool:
     finally:
         session.close()
 
+async def set_user_profile_version_in_db(user_id: int, profile_version: int) -> bool:
+    session = SessionLocal()
+    try:
+        # Query the user by ID
+        user = session.query(User).filter(User.id == user_id).first()
+        if user:
+            # Set the new profile version
+            user.profile_version = profile_version
+            session.commit()
+            return True
+        else:
+            return False
+    except Exception as e:
+        session.rollback()
+        # Log the error
+        await logger.error(msg=f"Error setting user profile version: {e}", chat_id=user_id)
+        return False
+    finally:
+        session.close()
+
 async def create_new_conversation_for_users_in_db(
     user_id: int,
     user_profile_version: int,
@@ -471,6 +491,7 @@ async def set_is_active_flag_for_user_in_db(user_id: int, is_active: bool) -> bo
                 f"No user found with ID during set_is_active_flag_for_user_in_db: {user_id}"
             )
     except Exception as e:
+        await logger.error(msg=f"Unregistration failed: {str(e)}", chat_id=user_id)
         session.rollback()
         raise e
     finally:
@@ -500,24 +521,16 @@ async def set_is_ready_to_chat_flag_for_user_in_db(
     return True
 
 
-# TODO: implement versioning!
+
 async def mark_user_as_inactive_in_db(user_id: int) -> bool:
-    session = SessionLocal()
-    try:
-        existing_user = session.query(User).filter_by(id=user_id).first()
-        if existing_user and existing_user.is_active:
-            # Mark the user as inactive instead of deleting
-            existing_user.is_active = False
-            session.commit()
-            session.close()
-            return True
-        else:
-            session.close()
+    user = await get_user_from_db(user_id)
+    if not user:                 
+        return False
+    else:
+        if not user.is_active:   
             return False
-    except Exception as e:
-        session.rollback()
-        await logger.error(msg=f"Unregistration failed: {str(e)}", chat_id=user_id)
-        raise e
+        await set_is_active_flag_for_user_in_db(user_id, False)
+        return True
 
 
 # TODO: implement versioning!
@@ -544,25 +557,29 @@ async def delete_user_profile_from_db(user_id: int) -> bool:
 async def get_max_profile_version_of_user_from_db(user_id: int) -> int:
     session = SessionLocal()
     try:
+        # Get the max profile version from conversations where the user is user1
         max_user1_profile_version = (
             session.query(func.max(Conversation.user1_profile_version))
             .filter(Conversation.user1_id == user_id)
             .scalar()
-        )
+        ) or 0  # Default to 0 if None
+
+        # Get the max profile version from conversations where the user is user2
         max_user2_profile_version = (
             session.query(func.max(Conversation.user2_profile_version))
             .filter(Conversation.user2_id == user_id)
             .scalar()
-        )
+        ) or 0  # Default to 0 if None
 
-        max_user1_profile_version = (
-            max_user1_profile_version if max_user1_profile_version is not None else 0
-        )
-        max_user2_profile_version = (
-            max_user2_profile_version if max_user2_profile_version is not None else 0
-        )
+        # Get the profile version from the users table
+        user_profile_version = (
+            session.query(User.profile_version)
+            .filter(User.id == user_id)
+            .scalar()
+        ) or 0  # Default to 0 if None
 
-        profile_version = max(max_user1_profile_version, max_user2_profile_version)
+        # Determine the maximum profile version across all sources
+        profile_version = max(max_user1_profile_version, max_user2_profile_version, user_profile_version)
 
         return profile_version
     except Exception as e:

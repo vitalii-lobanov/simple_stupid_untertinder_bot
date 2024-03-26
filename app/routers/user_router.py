@@ -116,7 +116,7 @@ async def cmd_user_show_my_profile(message: types.Message) -> None:
 
 
 @user_router.message(Command(commands=["start_chatting"]))
-async def cmd_start_chatting(message: types.Message, state: FSMContext) -> None:
+async def cmd_user_start_chatting(message: types.Message, state: FSMContext) -> None:
     await save_telegram_message(
         message=message, message_source=MessageSource.command_received
     )

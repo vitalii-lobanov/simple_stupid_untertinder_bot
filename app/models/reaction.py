@@ -16,4 +16,10 @@ class Reaction(Base):
     rank = Column(Integer, default=0)
 
     user = relationship("User")
-    message = relationship("Message", backref="emoji_reactions")
+    #message = relationship("Message", backref="emoji_reactions")
+    message = relationship(
+        "Message",
+        back_populates="reactions",
+        foreign_keys=[message_id]
+    )
+    
