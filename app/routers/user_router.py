@@ -5,13 +5,12 @@ from aiogram.fsm.context import FSMContext
 from core.bot import bot_instance
 
 # , state_user_is_ready_to_chat_handler
-from core.states import CommonStates, RegistrationStates, UserStates
-from core.telegram_messaging import send_tiered_parnter_s_message_to_user
+from core.states import RegistrationStates, UserStates
+from core.telegram_messaging import send_reconstructed_telegram_message_to_user, send_service_message, send_tiered_partner_s_message_to_user
 
 # registration_handlers.py
 from filters.custom_filters import InStateFilter
-from handlers.tg_chatting_handlers import (
-    cmd_start_chatting,
+from handlers.tg_chatting_handlers import (    
     message_reaction_handler,
     state_user_is_in_chatting_progress_handler,
 )
@@ -22,11 +21,12 @@ from handlers.tg_user_register_handlers import (
 )
 
 # from handlers.tg_commands import message_reaction_handler
-from handlers.tg_user_unregister_handlers import cmd_unregister
+
 from models.base import MessageSource
 from services.dao import save_telegram_message
 from services.score_tiers import message_tiers_count
 from utils.debug import logger
+from handlers.tg_commands import cmd_start_chatting, cmd_unregister
 
 # bot_instance = None
 
@@ -110,13 +110,13 @@ async def cmd_user_show_my_profile(message: types.Message) -> None:
     )
     logger.sync_debug("'/hard_unregister' command received")
     for i in range(0, message_tiers_count.MESSAGE_TIERS_COUNT):
-        await send_tiered_parnter_s_message_to_user(
+        await send_tiered_partner_s_message_to_user(
             bot_instance, message.from_user.id, i
         )
 
 
 @user_router.message(Command(commands=["start_chatting"]))
-async def cmd_cmd_start_chatting(message: types.Message, state: FSMContext) -> None:
+async def cmd_start_chatting(message: types.Message, state: FSMContext) -> None:
     await save_telegram_message(
         message=message, message_source=MessageSource.command_received
     )

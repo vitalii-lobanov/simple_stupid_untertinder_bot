@@ -16,7 +16,7 @@ from core.states import (
 from core.telegram_messaging import (
     send_reconstructed_telegram_message_to_user,
     send_service_message,
-    send_tiered_parnter_s_message_to_user,
+    send_tiered_partner_s_message_to_user,
 )
 from models.message import MessageSource
 from services.dao import (
@@ -331,7 +331,7 @@ async def message_reaction_handler(
                 )
 
                 # TODO: Change all the parameters everywhere for named arguments instead of positional
-                await send_tiered_parnter_s_message_to_user(
+                await send_tiered_partner_s_message_to_user(
                     bot_instance, user_id, partner_id, reached_tier
                 )
 

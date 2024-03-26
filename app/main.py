@@ -15,11 +15,13 @@ logger.sync_debug("Redis URL: {}".format(REDIS_URL))
 async def main():
     # Initialize database
     initialize_db()
+    logger.sync_debug('Database initialized successfully.')
 
     # Include the router in the dispatcher
     dispatcher.include_router(user_router)
 
     # Start the bot
+    logger.sync_debug('Starting the bot...')
     await dispatcher.start_polling(bot_instance)
 
 

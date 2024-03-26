@@ -1,25 +1,27 @@
 # TODO: move contents of service_message_sender.py to here
 
-from aiogram import Bot, types
+from aiogram import Bot
 from aiogram.fsm.context import FSMContext
+from utils.text_messages import message_this_is_bot_message
+from aiogram import types
 from core.bot import bot_instance
 
 # from app.tasks.tasks import celery_app
 from models import Message
-from services.dao import (
-    get_max_profile_version_of_user_from_db,
-    get_tiered_profile_message_from_db,
-)
 from utils.debug import logger
-from utils.text_messages import (
-    message_this_is_bot_message,
-    message_this_message_is_forwarded,
+
+
+from utils.text_messages import message_this_message_is_forwarded
+from services.dao import (
+    get_tiered_profile_message_from_db,
+    get_max_profile_version_of_user_from_db,
 )
 
 
 async def send_reconstructed_telegram_message_to_user(
     message: Message, user_id: int
 ) -> None:
+
     if message is not None:
         if message.original_sender_id is not None:
             message_text = message_this_message_is_forwarded(
@@ -104,14 +106,14 @@ async def send_service_message(
     await bot_instance.send_message(chat_id=tg_chat_id, text=msg, parse_mode="HTML")
 
 
-async def send_tiered_partner_s_message_to_user(
+async def send_tiered_partner_s_message_to_user(    
     user_id: int,
     partner_id: int,
     tier: int,
 ) -> None:
-    try:
-        current_partner_profile_version: int = (
-            await get_max_profile_version_of_user_from_db(user_id=partner_id)
+    try:        
+        current_partner_profile_version: int = await get_max_profile_version_of_user_from_db(
+            user_id=partner_id
         )
         tiered_message: types.Message = await get_tiered_profile_message_from_db(
             user_id=partner_id,

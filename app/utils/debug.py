@@ -1,9 +1,27 @@
 import logging
 import colorlog
-from core.telegram_messaging import send_service_message
+from aiogram import Bot
+from core.bot import bot_instance
 from aiogram.fsm.context import FSMContext
 import os
+from core.states import UserStates
+from utils.text_messages import message_this_is_bot_message
 
+
+
+#We cannot import 'send_service_message' from 'telegram_messaging' module
+async  def __send_service_message__(
+    message: str, state: FSMContext = None, chat_id: int = None
+) -> None:
+    if state is not None:
+        tg_chat_id = state.key.chat_id
+    elif chat_id is not None:
+        tg_chat_id = chat_id
+    else:
+        tg_chat_id = None
+        raise ValueError("Either state or chat_id must be provided")
+    msg = f"{message_this_is_bot_message()}{message}"
+    await bot_instance.send_message(chat_id=tg_chat_id, text=msg, parse_mode="HTML")
 
 class CustomColorLogger(logging.Logger):
     def __init__(self, name, level=logging.NOTSET):
@@ -37,9 +55,9 @@ class CustomColorLogger(logging.Logger):
     ):
         message = f"{msg}"
         if state is not None:
-            await send_service_message(message=message, state=state)
+            await __send_service_message__(message=message, state=state)
         elif chat_id is not None:
-            await send_service_message(message=message, chat_id=chat_id)
+            await __send_service_message__(message=message, chat_id=chat_id)
         else:
             return
 
