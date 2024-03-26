@@ -1,17 +1,19 @@
+from typing import Any, Awaitable, Dict, Union
+
 from aiogram.filters.base import Filter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State
-from typing import Any, Union, Dict, Awaitable
 
 
 class InStateFilter(Filter):
-    def __init__(self, state: State):
+    def __init__(self, state: State) -> None:
+        super().__init__()
         self.state = state
 
     async def __call__(self, *args: Any, **kwargs: Any) -> Union[bool, Dict[str, Any]]:
         # Extract `FSMContext` from `kwargs` as it should be provided to the filter
         # by aiogram when the filter is applied to a handler
-        state: FSMContext = kwargs.get('state')
+        state: FSMContext = kwargs.get("state")
 
         # If `state` is not present in `kwargs`, we cannot proceed
         if not state:

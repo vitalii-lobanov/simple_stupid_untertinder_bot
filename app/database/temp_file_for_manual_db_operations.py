@@ -1,13 +1,13 @@
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, declarative_base
 from config import DATABASE_URI
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
 
 
 class TestTable(Base):
-    __tablename__ = 'test_table'
+    __tablename__ = "test_table"
     id = Column(Integer, primary_key=True)
     name = Column(String)
 
@@ -24,9 +24,9 @@ Base.metadata.create_all(engine)
 
 # Add a test entry
 session = SessionLocal()
-test_entry = TestTable(name='Test Name')
+test_entry = TestTable(name="Test Name")
 session.add(test_entry)
 session.commit()
 session.close()
 
-print('Table created and entry added.')
+print("Table created and entry added.")
