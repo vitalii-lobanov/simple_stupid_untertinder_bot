@@ -32,6 +32,7 @@ from services.score_tiers import message_tiers_count
 from handlers.tg_partner_change_handlers import next_please_handler
 from services.dao import save_telegram_message
 from models.base import MessageSource
+from handlers.tg_commands import cmd_renew_profile
 
 
 #bot_instance = None
@@ -53,22 +54,30 @@ user_router = Router()
 @user_router.message(Command(commands=['unregister']))
 async def cmd_user_unregister(message: types.Message, state: FSMContext):
     await save_telegram_message(message=message, message_source=MessageSource.command_received)
-    await cmd_unregister(message)
+    await cmd_unregister(message, state)
 
+#TODO: all the command handlers rename to cmd_*
+#TODO: handle start command corrtectly
 @user_router.message(Command(commands=['start']))
-async def cmd_user_start(message: types.Message):
+async def cmd_user_start(message: types.Message, state: FSMContext):
     await save_telegram_message(message=message, message_source=MessageSource.command_received)
     logger.sync_debug("'/start' command received")
     await cmd_start(message)
 
 
-#TODO: all the command handlers rename to cmd_*
-@user_router.message(Command(commands=['hard_unregister']))
-async def cmd_user_hard_unregister(message: types.Message):
-    await save_telegram_message(message=message, message_source=MessageSource.command_received)
-    logger.sync_debug("'/hard_unregister' command received")
-    await cmd_hard_unregister(message)
 
+# @user_router.message(Command(commands=['hard_unregister']))
+# async def cmd_user_hard_unregister(message: types.Message):
+#     await save_telegram_message(message=message, message_source=MessageSource.command_received)
+#     logger.sync_debug("'/hard_unregister' command received")
+#     await cmd_hard_unregister(message)
+
+
+# @user_router.message(Command(commands=['renew_profile']))
+# async def cmd_user_renew_profile(message: types.Message, state: FSMContext):
+#     await save_telegram_message(message=message, message_source=MessageSource.command_received)
+#     logger.sync_debug("'/renew_profile' command received")
+#     await cmd_renew_profile(message, state)
 
 # The user starts a registration process
 @user_router.message(Command(commands=['register']))

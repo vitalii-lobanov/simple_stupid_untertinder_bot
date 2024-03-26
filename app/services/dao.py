@@ -10,6 +10,7 @@ from models import Conversation
 import random
 from datetime import datetime
 from models.user import User
+from sqlalchemy import func
 
 
 
@@ -47,11 +48,12 @@ async def save_telegram_message(message: types.Message, message_source: MessageS
     message_id = message.message_id
     session = SessionLocal()
     photo = None
-    video = None
 
     # Extract the file ID of the largest photo
     if message.photo:
         photo = message.photo[-1].file_id  # Get the file_id of the last (largest) photo size
+
+
 
     try:
         new_message = Message(
@@ -196,7 +198,7 @@ async def get_currently_active_conversation_for_user_from_db(user_id: int) -> Co
     try:     
         conversation = session.query(Conversation).filter(
             (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
-            Conversation.is_active == True
+            Conversation.is_active is True
             ).first()
     except SQLAlchemyError as e:
         session.rollback()
@@ -269,7 +271,7 @@ async def get_new_partner_for_conversation_for_user_from_db(user_id):
     potential_partners = (
         session.query(User)
         .filter(
-            User.is_ready_to_chat == True,
+            User.is_ready_to_chat is True,
             User.id != user_id,  # Exclude the current user from the results
             ~session.query(Conversation)
             .filter(
@@ -292,7 +294,7 @@ async def get_new_partner_for_conversation_for_user_from_db(user_id):
         return None
     
 
-async def create_new_conversation_for_users_in_db(user_id: int, partner_id: int):
+async def create_new_conversation_for_users_in_db(user_id: int, user_profile_version: int, partner_id: int, patner_profile_version: int) -> Conversation:
         session = SessionLocal()
         conversation = None
         try:
@@ -309,11 +311,11 @@ async def create_new_conversation_for_users_in_db(user_id: int, partner_id: int)
             session.close()
             return conversation
 
-async def get_tiered_profile_message_from_db(user_id: int = -1, tier: int = -1) -> Message:
+async def get_tiered_profile_message_from_db(user_id: int = -1, tier: int = -1, profile_version: int = -1) -> Message:
     session = SessionLocal()
     try:
         # Query for the message of the given tier
-        tiered_message = session.query(Message).filter_by(user_id=user_id, tier=tier).first()
+        tiered_message = session.query(Message).filter_by(user_id=user_id, tier=tier, profile_version=profile_version).first()
     except SQLAlchemyError as e:
         session.rollback()
         await logger.error(msg=f"SQLAlchemy error getting tiered profile message: {e}")
@@ -425,3 +427,21 @@ async def delete_user_profile_from_db(user_id: int) -> bool:
         await logger.error(msg=f"Unregistration failed: {str(e)}", chat_id=user_id)
         raise e    
     
+
+async def get_max_profile_version_of_user_from_db(user_id: int) -> int:
+    session = SessionLocal()
+    try:
+        max_user1_profile_version = session.query(func.max(Conversation.user1_profile_version)).filter(Conversation.user1_id == user_id).scalar()
+        max_user2_profile_version = session.query(func.max(Conversation.user2_profile_version)).filter(Conversation.user2_id == user_id).scalar()
+        
+        max_user1_profile_version = max_user1_profile_version if max_user1_profile_version is not None else 0
+        max_user2_profile_version = max_user2_profile_version if max_user2_profile_version is not None else 0
+        
+        profile_version = max(max_user1_profile_version, max_user2_profile_version)
+
+        return profile_version
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()

@@ -5,26 +5,33 @@ from models.user import User
 from aiogram import types
 from core.states import  CommonStates
 from utils.debug import logger
-from models.message import Message
-from models.base import MessageSource
 from services.dao import save_user_to_db, save_tiered_registration_message, get_user_from_db, set_is_active_flag_for_user_in_db
 from services.score_tiers import message_tiers_count
+from services.dao import get_max_profile_version_of_user_from_db
+from core.telegram_messaging import send_service_message
+from utils.text_messages import message_now_please_send_profile_messages, message_registration_failed, message_profile_message_received_please_send_the_remaining
 
 #from app.tasks.tasks import celery_app
 
 # This function will create a new user instance in the database and initiate the message receiving state.
 async def create_new_registration(message: types.Message, state: FSMContext, user_id: int, username: str):
-    #TODO: add profile versioning    
-    new_user = User(id=user_id, username=username, is_active=False, is_ready_to_chat=False)
-    await save_user_to_db(new_user)
+    existing_user = await get_user_from_db(user_id=user_id)
+    if existing_user:      
+        existing_user.is_active = True
+        existing_user.profile_version += 1
+        await save_user_to_db(existing_user)
+    else:        
+        user_profile_version = await get_max_profile_version_of_user_from_db(user_id=user_id) + 1
+        new_user = User(id=user_id, username=username, is_active=True, is_ready_to_chat=False, profile_version=user_profile_version)
+        await save_user_to_db(new_user)
+
     await ask_user_to_send_messages_to_fill_profile(message, state)
 
 
 # This function will handle any exceptions that occur during the registration process.
 async def registration_failed(message: types.Message, state: FSMContext, exception: Exception):
     await state.set_state(CommonStates.default)
-    await message.answer("Registration failed.")
-    await logger.error(msg=f'Failed to complete registration. Exception: {str(exception)}', state=state)
+    await logger.error(msg=f'{message_registration_failed()} Exception: {str(exception)}', state=state)
 
 
 async def increment_message_count(message: types.Message, state: FSMContext):
@@ -35,8 +42,11 @@ async def increment_message_count(message: types.Message, state: FSMContext):
 
 
 async def check_message_threshold(message: types.Message, state: FSMContext, message_count: int):
-    if message_count < message_tiers_count.MESSAGE_TIERS_COUNT:
-        await message.answer(f"Message {message_count} received. {message_tiers_count.MESSAGE_TIERS_COUNT - message_count} messages left.")
+    if message_count < message_tiers_count.MESSAGE_TIERS_COUNT:        
+        await send_service_message(
+                                message=message_profile_message_received_please_send_the_remaining(message_count=message_count, 
+                                                                                                total_messages_count=message_tiers_count.MESSAGE_TIERS_COUNT), 
+                                chat_id=message.from_user.id)
     else:
         await complete_registration(message, state)
 
@@ -56,7 +66,8 @@ async def ask_user_to_send_messages_to_fill_profile(message: types.Message, stat
     await state.set_state(RegistrationStates.receiving_messages)
     await state.update_data(message_count=0)
     logger.sync_debug(f"User {message.from_user.id} has started registration.")
-    await message.answer(f"Please send {message_tiers_count.MESSAGE_TIERS_COUNT} messages to complete your registration.")
+    await send_service_message(message=message_now_please_send_profile_messages(message_tiers_count.MESSAGE_TIERS_COUNT), chat_id=message.from_user.id)
+    
 
 
 async def receiving_messages_on_registration_handler(message: types.Message, state: FSMContext):

@@ -47,3 +47,41 @@ def message_non_registered_users_cannot_start_chatting():
 
 def message_you_now_ready_to_chat_please_wait_the_partner_to_connect():
     return "You are now ready to chat. Please wait for your partner to connect."
+
+# def message_you_are_not_in_default_state_and_cannot_renew_profile():
+#     return "You are not in default state. Stop all the conversations and other activities and use '/renew_profile' command to start again."
+
+def message_you_cannot_unregister_now():
+    return "You cannot unregister now. Finish all the conversations and other activities and use '/register' command to start again."
+
+def message_you_have_been_registered_successfully():
+    return "You have been registered successfully. You can use '/start_chatting' command to start chatting with someone."
+
+def message_now_please_send_profile_messages(messages_count: int = -1):
+    if messages_count == -1:
+        raise ValueError("messages_count cannot be -1.")
+    else:
+        return f"Please send {messages_count} profile messages."
+    
+def message_cmd_start_welcome_message():
+    return "Welcome! Use /register to sign up and /start_chatting to begin chatting with someone."
+
+def message_registration_failed():
+    return "Registration failed. Please contact support."
+def message_profile_message_received_please_send_the_remaining(message_count: int = -1, total_messages_count: int=-1):
+    if message_count == -1 or total_messages_count == -1:
+        raise ValueError("message_count and total_messages_count cannot be -1.")
+    else:
+        return f"Message {message_count} received. {total_messages_count - message_count} messages left."
+    
+def message_no_partners_ready_to_chat_available_we_will_inform_you_later():
+    return "No partners are ready to chat. We will inform you later."
+    
+def message_you_should_not_react_your_own_messages():
+    return "You should not react your own messages."
+
+def message_you_have_reached_the_next_tier(current_score:int = 0, reached_tier: int = 0):
+    return f"Your score is {current_score}. You have reached the {reached_tier} score threshold."
+
+def message_you_are_not_in_default_state_and_cannot_register():
+    return "You are not in default state. Stop all the conversations and other activities and use '/register' command to try again."

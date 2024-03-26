@@ -1,28 +1,12 @@
-import random
-from datetime import datetime
-from utils.text_messages import message_a_conversation_partner_found, message_you_now_connected_to_the_conversation_partner
 from aiogram import types
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.storage.base import StorageKey
-from aiogram.types import ReactionTypeEmoji
 from core.bot import bot_instance
-from sqlalchemy.exc import SQLAlchemyError
 # from app.tasks.tasks import celery_app
 
-from core.dispatcher import  dispatcher
-from models import Conversation, Message
-from models.user import User
-from core.states import  CommonStates, UserStates
+from core.states import  UserStates
 from utils.debug import logger
-from services.dao import save_telegram_message, save_telegram_reaction
-from models.message import MessageSource
-from aiogram.methods.set_message_reaction import SetMessageReaction
-from services.emoji_rank import EmojiRank
-from services.score_tiers import message_tiers_count, profile_disclosure_tiers_score_levels
-from core.telegram_messaging import send_tiered_parnter_s_message_to_user
-from utils.service_messages_sender import send_service_message
-from utils.text_messages import message_this_is_bot_message, message_the_last_tier_reached
-from services.dao import get_currently_active_conversation_for_user_from_db, get_message_for_given_conversation_from_db, get_message_in_inactive_conversations_from_db
+from core.telegram_messaging import send_service_message
+from services.dao import get_currently_active_conversation_for_user_from_db
 import asyncio
 from utils.text_messages import message_you_are_not_in_chatting_state, message_you_send_end_command_and_your_partner_has_sent_it_earlier, message_you_sent_end_command_earlier_and_your_just_sent_it_now
 from core.states import  access_user_context
@@ -99,14 +83,14 @@ async def next_please_handler(message: types.Message, state: FSMContext):
     if partner_state == UserStates.wants_to_end_chatting:
         close_result = await __close_up_conversation__(message, state, time_countdown = 0)
         if close_result is True:
-            await send_service_message(bot_instance=bot_instance, message=message_you_send_end_command_and_your_partner_has_sent_it_earlier(), chat_id=user_id)
-            await send_service_message(bot_instance=bot_instance, message=message_you_sent_end_command_earlier_and_your_just_sent_it_now(), chat_id=partner_id)
+            await send_service_message(message=message_you_send_end_command_and_your_partner_has_sent_it_earlier(), chat_id=user_id)
+            await send_service_message(message=message_you_sent_end_command_earlier_and_your_just_sent_it_now(), chat_id=partner_id)
         
     elif partner_state == UserStates.chatting_in_progress: 
         close_result = await __close_up_conversation__(message, state, time_countdown = NEXT_PLEASE_WAITING_TIMEOUT)
         if close_result is True:
-            await send_service_message(bot_instance=bot_instance, message=message_you_sent_end_command_earlier_and_timer_expired(), chat_id=user_id)
-            await send_service_message(bot_instance=bot_instance, message=message_your_partner_sent_end_command_earlier_and_timer_expired(), chat_id=partner_id)
+            await send_service_message(message=message_you_sent_end_command_earlier_and_timer_expired(), chat_id=user_id)
+            await send_service_message(message=message_your_partner_sent_end_command_earlier_and_timer_expired(), chat_id=partner_id)
     else:
         await logger.error(msg=f"Partner is not in a conversation or wants to end.. User_id: {user_id}, partner_id: {partner_id}, conversation partner state: {partner_state}", state=state)
         raise RuntimeError(f"Partner is not in a conversation or wants to end.. User_id: {user_id}, partner_id: {partner_id}, conversation partner state: {partner_state}")

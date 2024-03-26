@@ -1,33 +1,28 @@
-import random
 from datetime import datetime
 from utils.text_messages import message_a_conversation_partner_found, message_you_now_connected_to_the_conversation_partner
 from aiogram import types
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.storage.base import StorageKey
 from aiogram.types import ReactionTypeEmoji
 from core.bot import bot_instance
 from sqlalchemy.exc import SQLAlchemyError
 # from app.tasks.tasks import celery_app
-from core.dispatcher import  dispatcher
-from models import Conversation, Message
-from models.user import User
 from core.states import  CommonStates, UserStates
 from utils.debug import logger
 from services.dao import save_telegram_message, save_telegram_reaction
 from models.message import MessageSource
-from aiogram.methods.set_message_reaction import SetMessageReaction
 from services.emoji_rank import EmojiRank
-from services.score_tiers import message_tiers_count, profile_disclosure_tiers_score_levels
+from services.score_tiers import profile_disclosure_tiers_score_levels
 from core.telegram_messaging import send_tiered_parnter_s_message_to_user
-from utils.service_messages_sender import send_service_message
-from utils.text_messages import message_this_is_bot_message, message_the_last_tier_reached
+from core.telegram_messaging import send_service_message
+from utils.text_messages import message_the_last_tier_reached
 from services.dao import get_currently_active_conversation_for_user_from_db, get_message_for_given_conversation_from_db, get_message_in_inactive_conversations_from_db
-from core.states import  access_user_context
-from handlers.tg_commands import cmd_start_chatting
 from core.states import  initialize_states_for_chatter_to_start_conversation
 from core.states import  get_user_context
 from services.dao import get_new_partner_for_conversation_for_user_from_db, create_new_conversation_for_users_in_db, get_conversation_partner_id_from_db
 from core.telegram_messaging import send_reconstructed_telegram_message_to_user
+from services.dao import get_max_profile_version_of_user_from_db
+from utils.text_messages import message_no_partners_ready_to_chat_available_we_will_inform_you_later, message_you_should_not_react_your_own_messages
+from utils.text_messages import message_you_have_reached_the_next_tier
 
 
 async def __set_disclosure_level__(state: FSMContext, level: int):
@@ -51,11 +46,7 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext):
     try:
         partner = await get_new_partner_for_conversation_for_user_from_db(user_id)
         if partner is None:
-            await bot_instance.send_message(
-                chat_id=user_id,
-                text="No chat partners available right now. We will iform you when one is available.",
-            )
-            return False
+            await send_service_message(message=message_no_partners_ready_to_chat_available_we_will_inform_you_later(), chat_id=user_id)
 
         #TODO: why ready_to_chat? It should be chatting_in_progress | COMMENTED WITHOUT TEST!!!
         #await state.set_state(UserStates.ready_to_chat)
@@ -64,7 +55,10 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext):
 
 
         # Step 3: Create a new Conversation instance
-        conversation = await create_new_conversation_for_users_in_db(user_id=user_id, partner_id=partner.id)
+        user_profile_version = get_max_profile_version_of_user_from_db(user_id=user_id)
+        partner_profile_version = get_max_profile_version_of_user_from_db(user_id=partner.id)
+        conversation = await create_new_conversation_for_users_in_db(user_id=user_id, user_profile_version=user_profile_version, partner_id=partner.id, 
+                                                                    patner_profile_version=partner_profile_version)
         if conversation is None:
             await logger.error(msg=f"Conversation was not created. User_id: {user_id}, partner_id: {partner.id}", chat_id=user_id)
             await logger.error(msg=f"Conversation was not created. User_id: {user_id}, partner_id: {partner.id}", chat_id=partner.id)
@@ -177,7 +171,7 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
 
     if user_id == message_sender:
         #TODO: add more user messages text for this (i.e. narcissism)
-        await bot_instance.send_message(chat_id=user_id, text="You should not react to your own messages.")
+        await send_service_message(message=message_you_should_not_react_your_own_messages(), chat_id=user_id)
         return
     
         
@@ -231,21 +225,20 @@ async def message_reaction_handler(message_reaction: types.MessageReactionUpdate
             
             reached_tier = await check_conversation_score_threshold(current_score=current_score, state=user_context)
             if reached_tier is not False:
-                await logger.debug(msg=f"Your score is {current_score}. You have reached the {reached_tier} score threshold.", chat_id=user_id)
-                await bot_instance.send_message(chat_id=user_id, text=f"""Your score is {current_score}. You have reached the {reached_tier} score threshold. 
-                                                Now you can see a part of your partner's profile.""")
+                logger.sync_debug(msg=f"Your score is {current_score}. You have reached the {reached_tier} score threshold.")
+                await send_service_message(
+                                            message=message_you_have_reached_the_next_tier(current_score=current_score, reached_tier=reached_tier),
+                                            chat_id=user_id)
                 
                 #TODO: Change all the parameters everywhere for named arguments instead of positional
                 await send_tiered_parnter_s_message_to_user(bot_instance, user_id, partner_id, reached_tier)
 
                 if reached_tier >= len (profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS) - 1:
-                    await logger.debug(msg=f"Your score is {current_score}. You have reached the last score threshold.", chat_id=user_id)
-                    await send_service_message(bot_instance=bot_instance, 
-                                                message=message_the_last_tier_reached, 
-                                                chat_id=user_id)
-                    await send_service_message(bot_instance=bot_instance, 
-                                                message=message_the_last_tier_reached, 
-                                                chat_id=partner_id)            
+                    await logger.sync_debug(msg=f"Your score is {current_score}. You have reached the last score threshold.")                  
+                                           
+                    await send_service_message(
+                                                message=message_the_last_tier_reached(), 
+                                                chat_id=user_id)            
 
                 
         else:

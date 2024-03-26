@@ -38,7 +38,8 @@ from database.engine import SessionLocal
 from aiogram import types
 from utils.debug import logger
 from models.message import Message
-from services.dao import get_tiered_profile_message_from_db
+from services.dao import get_tiered_profile_message_from_db, get_max_profile_version_of_user_from_db
+from core.bot import bot_instance
 
 
 async def send_reconstructed_telegram_message_to_user(message: Message = None, user_id: int = -1):  
@@ -108,7 +109,8 @@ async def send_tiered_parnter_s_message_to_user(bot_instance, user_id: int, part
 
     try:
         # Query for the message of the given tier
-        tiered_message = get_tiered_profile_message_from_db(user_id = partner_id, tier = tier)        
+        current_partner_profile_version = await get_max_profile_version_of_user_from_db(user_id = partner_id)
+        tiered_message = await get_tiered_profile_message_from_db(user_id = partner_id, tier = tier, profile_version=current_partner_profile_version)        
         await send_reconstructed_telegram_message_to_user(message = tiered_message, user_id = partner_id)
     except Exception as e:
         logger.sync_error(msg=f"Error sending tiered profile message: {e}")

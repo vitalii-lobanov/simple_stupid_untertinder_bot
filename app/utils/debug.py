@@ -1,9 +1,7 @@
 import logging
 import colorlog
-from utils.service_messages_sender import send_service_message
+from core.telegram_messaging import send_service_message
 from aiogram.fsm.context import FSMContext
-from core.bot import bot_instance
-from utils.text_messages import message_this_is_bot_message
 import os
 
 class CustomColorLogger(logging.Logger):
@@ -33,9 +31,9 @@ class CustomColorLogger(logging.Logger):
     async def __send_msg_to_user__(self, msg, state: FSMContext = None, chat_id: int = None):
         message = f"{msg}"
         if state is not None:
-            await send_service_message(bot_instance=bot_instance, message=message, state=state)
+            await send_service_message(message=message, state=state)
         elif chat_id is not None:
-            await send_service_message(bot_instance=bot_instance, message=message, chat_id=chat_id)
+            await send_service_message(message=message, chat_id=chat_id)
         else: 
             return        
 
