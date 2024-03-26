@@ -21,7 +21,7 @@ class Message(Base):
     message_source = Column(Enum(MessageSource))
     conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=True)
     text = Column(String)
-    user_provile_version = Column(Integer)
+    user_profile_version = Column(Integer)
     reactions = relationship(
         "Reaction", backref="message", foreign_keys="[Reaction.sender_message_id]"
     )

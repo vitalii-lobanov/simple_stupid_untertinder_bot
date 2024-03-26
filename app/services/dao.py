@@ -62,12 +62,14 @@ async def save_telegram_message(
     message_source: MessageSource = None,
     tier: int = -1,
     conversation_id: int = None,
+    profile_version: int = -1
 ) -> Message:
+    
     user_id = message.from_user.id
     message_id = message.message_id
     session = SessionLocal()
     photo = None
-
+   
     # Extract the file ID of the largest photo
     if message.photo:
         photo = message.photo[
@@ -81,6 +83,7 @@ async def save_telegram_message(
             message_source=message_source,
             message_id=message_id,
             conversation_id=conversation_id,
+            user_profile_version=profile_version,
             text=message.text or None,
             audio=message.audio.file_id if message.audio else None,
             video=message.video.file_id if message.video else None,
@@ -155,11 +158,11 @@ async def save_telegram_message(
 
 
 async def save_tiered_registration_message(
-    message: types.Message, message_count: int
+    message: types.Message, message_count: int, profile_version: int
 ) -> None:
     tier = message_count - 1
     message_source = MessageSource.registration_profile
-    await save_telegram_message(message, message_source, tier)
+    await save_telegram_message(message=message, message_source=message_source, tier=tier, profile_version=profile_version)
 
 
 async def save_telegram_reaction(
@@ -361,6 +364,18 @@ async def get_new_partner_for_conversation_for_user_from_db(user_id):
         return None
 
 
+async def get_user_is_active_status_from_db(user_id: int) -> bool:
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == user_id).first()
+        return user.is_active if user else False
+    except SQLAlchemyError as e:
+        session.rollback()
+        await logger.error(msg=f"SQLAlchemy error getting user active status: {e}", chat_id=user_id)
+        return False
+    finally:
+        session.close()
+
 async def create_new_conversation_for_users_in_db(
     user_id: int,
     user_profile_version: int,
@@ -401,7 +416,7 @@ async def get_tiered_profile_message_from_db(
         # Query for the message of the given tier
         tiered_message = (
             session.query(Message)
-            .filter_by(user_id=user_id, tier=tier, profile_version=profile_version)
+            .filter_by(user_id=user_id, tier=tier, user_profile_version=profile_version)
             .first()
         )
     except SQLAlchemyError as e:

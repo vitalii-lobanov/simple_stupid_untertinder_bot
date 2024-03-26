@@ -11,6 +11,7 @@ from services.dao import (
     get_user_from_db,
     mark_user_as_inactive_in_db,
     set_is_ready_to_chat_flag_for_user_in_db,
+    get_user_is_active_status_from_db,
 )
 from utils.text_messages import (
     message_cannot_unregister_not_registered_user,
@@ -21,7 +22,12 @@ from utils.text_messages import (
     message_you_cannot_unregister_now,
     message_you_have_been_registered_successfully,
     message_you_now_ready_to_chat_please_wait_the_partner_to_connect,
+    message_you_have_already_been_registered,
 )
+from core.states import RegistrationStates
+from services.dao import set_is_active_flag_for_user_in_db
+from utils.debug import logger
+
 
 # TODO: all the cmd_ functions from handlers should be here
 
@@ -29,6 +35,7 @@ from utils.text_messages import (
 async def cmd_start(message: types.Message, state: FSMContext) -> None:
     # await save_telegram_message(message=message, message_source=MessageSource.command_received)
     await state.clear()
+    await state.set_data({})
     await state.set_state(CommonStates.default)
     await send_service_message(
         message=message_cmd_start_welcome_message(), chat_id=message.from_user.id
@@ -78,13 +85,14 @@ async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
 async def cmd_register(message: types.Message, state: FSMContext) -> None:
     user_id = message.from_user.id
     user = await get_user_from_db(user_id)
-    if state is not CommonStates.default:
+    user_state = await state.get_state()
+    if user_state != CommonStates.default:
         await send_service_message(
             message=message_you_are_not_in_default_state_and_cannot_register(),
             chat_id=user_id,
         )
         return False
-    if user is None:
+    if not user:
         await create_new_registration(
             message,
             state,
@@ -94,10 +102,21 @@ async def cmd_register(message: types.Message, state: FSMContext) -> None:
                 or f"{message.from_user.first_name} {message.from_user.last_name}"
             ),
         )
+        await state.set_state(RegistrationStates.starting)
         await send_service_message(
             message=message_you_have_been_registered_successfully(), chat_id=user_id
         )
         await ask_user_to_send_messages_to_fill_profile(message, state)
+
+    elif not get_user_is_active_status_from_db(user_id): 
+        await set_is_active_flag_for_user_in_db(user_id=user_id, is_active=True)
+        await send_service_message(
+            message=message_you_have_already_been_registered(), chat_id=user_id
+        )
+    else:
+        await logger.error(msg="User {} is already registered, but the users profile is active, so cmd_register failed", chat_id=user_id)
+        raise ValueError(f"User {user_id} is already registered, but the users profile is active, so cmd_register failed")
+        
     # elif user.is_active and profile_messages_count == message_tiers_count.MESSAGE_TIERS_COUNT:
     #     #profile_message_count requires versioning to work
     #     #TODO: implement versionong
@@ -133,5 +152,5 @@ async def cmd_start_chatting(message: types.Message, state: FSMContext) -> None:
             await one_more_user_is_ready_to_chat(user_id, state)
 
 
-async def default_handler(message: types.Message) -> None:
+async def default_handler(message: types.Message, state: FSMContext) -> None:
     pass

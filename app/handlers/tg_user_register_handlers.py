@@ -16,6 +16,7 @@ from utils.text_messages import (
     message_now_please_send_profile_messages,
     message_profile_message_received_please_send_the_remaining,
     message_registration_failed,
+    message_your_profile_message_saved_and_profile_successfully_filled_up,
 )
 
 # from app.tasks.tasks import celery_app
@@ -34,9 +35,7 @@ async def create_new_registration(
         existing_user.profile_version += 1
         await save_user_to_db(existing_user)
     else:
-        user_profile_version = (
-            await get_max_profile_version_of_user_from_db(user_id=user_id) + 1
-        )
+        user_profile_version = 0
         new_user = User(
             id=user_id,
             username=username,
@@ -86,6 +85,10 @@ async def complete_registration(message: types.Message, state: FSMContext) -> No
     user = await get_user_from_db(user_id)
     if user is not None:
         set_is_active_flag_for_user_in_db(user_id, True)
+        await send_service_message(
+            message=message_your_profile_message_saved_and_profile_successfully_filled_up(),
+            chat_id=user_id,
+        )
     else:
         await logger.error(msg="No user found with ID {}", user_id=user_id)
         raise ValueError(f"No user found with ID {user_id}")
@@ -95,15 +98,18 @@ async def complete_registration(message: types.Message, state: FSMContext) -> No
 async def ask_user_to_send_messages_to_fill_profile(
     message: types.Message, state: FSMContext
 ) -> None:
-    await state.set_state(RegistrationStates.receiving_messages)
-    await state.update_data(message_count=0)
-    logger.sync_debug(f"User {message.from_user.id} has started registration.")
-    await send_service_message(
-        message=message_now_please_send_profile_messages(
-            message_tiers_count.MESSAGE_TIERS_COUNT
-        ),
-        chat_id=message.from_user.id,
-    )
+    
+    user_state = await state.get_state()
+    if user_state == RegistrationStates.starting:
+        await state.set_state(RegistrationStates.receiving_messages)
+        await state.update_data(message_count=0)
+        logger.sync_debug(f"User {message.from_user.id} has started registration.")
+        await send_service_message(
+            message=message_now_please_send_profile_messages(
+                message_tiers_count.MESSAGE_TIERS_COUNT
+            ),
+            chat_id=message.from_user.id,
+        )
 
 
 async def receiving_messages_on_registration_handler(
@@ -114,8 +120,11 @@ async def receiving_messages_on_registration_handler(
         or RegistrationStates.starting
         or RegistrationStates.completed
     ):
+        user_profile_version = await get_max_profile_version_of_user_from_db(
+            user_id=message.from_user.id
+        )
         message_count = await increment_message_count(message, state)
-        await save_tiered_registration_message(message, message_count)
+        await save_tiered_registration_message(message=message, message_count=message_count, profile_version = user_profile_version)
         await check_message_threshold(message, state, message_count)
     else:
         await logger.error(

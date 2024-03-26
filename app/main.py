@@ -21,7 +21,7 @@ async def main():
     dispatcher.include_router(user_router)
 
     # Start the bot
-    logger.sync_debug('Starting the bot...')
+    logger.sync_debug('Initializing complete.')
     await dispatcher.start_polling(bot_instance)
 
 

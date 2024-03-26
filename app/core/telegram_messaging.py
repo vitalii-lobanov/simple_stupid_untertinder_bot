@@ -88,12 +88,11 @@ async def send_reconstructed_telegram_message_to_user(
         # If there is only text, send it
         elif message.text is not None:
             await bot_instance.send_message(
-                chat_id=user_id, text=message_text, entities=message.entities
+                chat_id=user_id, text=message.text, entities=message.entities
             )
 
 
-async def send_service_message(
-    bot_instance: Bot, message: str, state: FSMContext = None, chat_id: int = None
+async def send_service_message(message: str, state: FSMContext = None, chat_id: int = None
 ) -> None:
     if state is not None:
         tg_chat_id = state.key.chat_id
@@ -107,18 +106,24 @@ async def send_service_message(
 
 
 async def send_tiered_partner_s_message_to_user(    
-    user_id: int,
-    partner_id: int,
-    tier: int,
+    user_id: int = 0,
+    partner_id: int = 0,
+    tier: int = -1,
 ) -> None:
     try:        
-        current_partner_profile_version: int = await get_max_profile_version_of_user_from_db(
+        current_partner_profile_version = await get_max_profile_version_of_user_from_db(
             user_id=partner_id
         )
-        tiered_message: types.Message = await get_tiered_profile_message_from_db(
-            user_id=partner_id,
+
+        if current_partner_profile_version == 0:
+            id = user_id            
+        else:
+            id = partner_id
+        profile_version = current_partner_profile_version
+        tiered_message = await get_tiered_profile_message_from_db(
+            user_id=id,
             tier=tier,
-            profile_version=current_partner_profile_version,
+            profile_version=profile_version,
         )
         await send_reconstructed_telegram_message_to_user(
             message=tiered_message, user_id=user_id

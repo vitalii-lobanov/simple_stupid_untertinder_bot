@@ -32,9 +32,9 @@ from handlers.tg_commands import cmd_start_chatting, cmd_unregister
 
 # Custom filter for registration process
 
-user_is_in_starting_registration_state_filter = InStateFilter(
-    RegistrationStates.starting
-)
+# user_is_in_starting_registration_state_filter = InStateFilter(
+#     RegistrationStates.starting
+# )
 user_is_in_receiving_messages_during_registration_state_filter = InStateFilter(
     RegistrationStates.receiving_messages
 )
@@ -67,7 +67,7 @@ async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
         message=message, message_source=MessageSource.command_received
     )
     logger.sync_debug("'/start' command received")
-    await cmd_start(message)
+    await cmd_start(message, state)
 
 
 # @user_router.message(Command(commands=['hard_unregister']))
@@ -108,10 +108,10 @@ async def cmd_user_show_my_profile(message: types.Message) -> None:
     await save_telegram_message(
         message=message, message_source=MessageSource.command_received
     )
-    logger.sync_debug("'/hard_unregister' command received")
+    logger.sync_debug("'/show_my_profile' command received")
     for i in range(0, message_tiers_count.MESSAGE_TIERS_COUNT):
         await send_tiered_partner_s_message_to_user(
-            bot_instance, message.from_user.id, i
+            user_id = message.from_user.id, tier=i, partner_id=message.from_user.id
         )
 
 

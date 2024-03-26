@@ -76,7 +76,7 @@ def message_you_cannot_unregister_now() -> str:
 
 
 def message_you_have_been_registered_successfully() -> str:
-    return "You have been registered successfully. You can use '/start_chatting' command to start chatting with someone."
+    return "You have been registered successfully. Now please fill up the profile if needed."
 
 
 def message_now_please_send_profile_messages(messages_count: int = -1) -> str:
@@ -119,3 +119,9 @@ def message_you_have_reached_the_next_tier(
 
 def message_you_are_not_in_default_state_and_cannot_register() -> str:
     return "You are not in default state. Stop all the conversations and other activities and use '/register' command to try again."
+
+def message_you_have_already_been_registered():
+    return "You have already been registered. Your profile was reactivated."
+
+def message_your_profile_message_saved_and_profile_successfully_filled_up():
+    return "Your profile message saved and profile successfully filled up. You can use /show_my_profile command to view the messages in your profile."
