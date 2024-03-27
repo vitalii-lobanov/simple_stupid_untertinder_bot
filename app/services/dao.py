@@ -244,17 +244,26 @@ async def get_message_for_given_conversation_from_db(
 
 async def get_currently_active_conversation_for_user_from_db(
     user_id: int,
-) -> Conversation:
+) -> dict | None:
+    res = dict()
     session = SessionLocal()
     try:
         conversation = (
             session.query(Conversation)
             .filter(
                 (Conversation.user1_id == user_id) | (Conversation.user2_id == user_id),
-                Conversation.is_active is True,
+                Conversation.is_active == True,  # noqa: E712
             )
             .first()
         )
+        res['conversation_id'] = conversation.id
+        res['user1_id'] = conversation.user1_id
+        res['user2_id'] = conversation.user2_id
+        res['user1_profile_version'] = conversation.user1_profile_version
+        res['user2_profile_version'] = conversation.user2_profile_version
+        res['start_time'] = conversation.start_time
+        res['is_active'] = conversation.is_active        
+
     except SQLAlchemyError as e:
         session.rollback()
         await logger.error(
@@ -264,7 +273,7 @@ async def get_currently_active_conversation_for_user_from_db(
         conversation = None
     finally:
         session.close()
-        return conversation
+        return res
 
 
 # TODO: make all these __db__ functions async
@@ -288,9 +297,9 @@ async def get_conversation_partner_id_from_db(user_id: int = 0) -> int:
     if not conversation:
         return None
     partner_id = (
-        conversation.user2_id
-        if conversation.user1_id == user_id
-        else conversation.user1_id
+        conversation['user2_id']
+        if conversation['user1_id'] == user_id
+        else conversation['user2_id']
     )
     return partner_id
 
@@ -399,7 +408,7 @@ async def create_new_conversation_for_users_in_db(
     user_profile_version: int,
     partner_id: int,
     patner_profile_version: int,
-) -> Conversation:
+) -> int:
     session = SessionLocal()
     conversation = None
     try:
@@ -587,3 +596,4 @@ async def get_max_profile_version_of_user_from_db(user_id: int) -> int:
         raise e
     finally:
         session.close()
+

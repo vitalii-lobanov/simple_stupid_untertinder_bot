@@ -30,6 +30,7 @@ if __name__ == "__main__":
 
 # TODO: look TODO's
 # TODO: -> and argument types for functions
+# TODO: looak at all the .get_state() and change them to check_user_state() from core.states
 # TODO: save all the messages in the database. Use all the handlers. Add saving from logger and bot_service_message | ??
 # TODO: states: default and not_ready_to_chat — choose one of them
 # TODO: handle is_ready_to_chat status for the users in the database according to states changes

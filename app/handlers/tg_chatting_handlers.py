@@ -12,6 +12,7 @@ from core.states import (
     UserStates,
     get_user_context,
     initialize_states_for_chatter_to_start_conversation,
+    check_user_state
 )
 from core.telegram_messaging import (
     send_reconstructed_telegram_message_to_user,
@@ -130,16 +131,23 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
 
 
 
-async def state_user_is_in_chatting_progress_handler(message: types.Message) -> None:
+async def state_user_is_in_chatting_progress_handler(message: types.Message, state: FSMContext) -> None:
+ 
     user_id = message.from_user.id
-    conversation = get_currently_active_conversation_for_user_from_db(user_id=user_id)
-    if conversation is not None:
-        partner_id = get_conversation_partner_id_from_db(user_id=user_id)
+    if not await check_user_state(user_id=user_id, state=UserStates.chatting_in_progress):
+        return
+    
+    conversation = await get_currently_active_conversation_for_user_from_db(user_id=user_id)
+    conversation_id = conversation['conversation_id']
+    if conversation_id is not None:
+        partner_id = await get_conversation_partner_id_from_db(user_id=user_id)
+        if not await check_user_state(user_id=partner_id, state=UserStates.chatting_in_progress):
+            raise Exception(f"Partner is not in state 'chatting_in_progress'. User_id: {user_id}, partner_id: {partner_id}")
         if partner_id is not None:
             reconstructed_message = await save_telegram_message(
                 message=message,
                 message_source=MessageSource.conversation,
-                conversation_id=conversation.id,
+                conversation_id=conversation_id,
             )
             await send_reconstructed_telegram_message_to_user(
                 message=reconstructed_message, user_id=partner_id
@@ -211,7 +219,7 @@ async def message_reaction_handler(
         )
 
     message_from_db = await get_message_for_given_conversation_from_db(
-        message_id=message_reaction.message_id, conversation_id=conversation.id
+        message_id=message_reaction.message_id, conversation_id=conversation['conversation_id']
     )
     if message_from_db is None:
         message_from_db = await get_message_in_inactive_conversations_from_db(

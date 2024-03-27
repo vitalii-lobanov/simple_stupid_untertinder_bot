@@ -3,6 +3,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.base import StorageKey
 from core.bot import bot_instance
 from core.dispatcher import dispatcher
+from typing import Union
 
 
 class RegistrationStates(StatesGroup):
@@ -47,3 +48,15 @@ async def get_user_context(user_id: int) -> FSMContext:
     )
 
     return user_context
+
+
+async def check_user_state(user_id:int = -1, state: Union[RegistrationStates, UserStates, CommonStates] = None) -> bool:
+    if user_id == -1:
+        raise ValueError("User id must be provided")
+    if state is None:
+        raise ValueError("State must be provided")
+    user_context = await get_user_context(user_id)
+    if await user_context.get_state() == state:
+        return True
+    else:
+        return False

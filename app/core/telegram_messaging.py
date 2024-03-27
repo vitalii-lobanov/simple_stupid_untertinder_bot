@@ -22,7 +22,9 @@ async def send_reconstructed_telegram_message_to_user(
     message: Message, user_id: int
 ) -> None:
 
+
     if message is not None:
+
         if message.original_sender_id is not None:
             message_text = message_this_message_is_forwarded(
                 original_sender_username=message.original_sender_username,
@@ -31,7 +33,7 @@ async def send_reconstructed_telegram_message_to_user(
             if message.caption is not None:
                 caption = message_this_message_is_forwarded(
                     original_sender_username=message.original_sender_username,
-                    message_text=message.caption,
+                    message_text=message.caption + "\n\n" + message.text,
                 )
             else:
                 caption = message.caption
