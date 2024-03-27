@@ -75,25 +75,19 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
                 message=message_no_partners_ready_to_chat_available_we_will_inform_you_later(),
                 chat_id=user_id,
             )
-            return
-
-        # TODO: why ready_to_chat? It should be chatting_in_progress | COMMENTED WITHOUT TEST!!!
-        # await state.set_state(UserStates.ready_to_chat)
-        # TODO: remove this:
-        await logger.debug(msg="Разберись со строкой выше!!!111", state=state)
-
-        # Step 3: Create a new Conversation instance
-        user_profile_version = get_max_profile_version_of_user_from_db(user_id=user_id)
-        partner_profile_version = get_max_profile_version_of_user_from_db(
+            return            
+        
+        user_profile_version = await get_max_profile_version_of_user_from_db(user_id=user_id)
+        partner_profile_version = await get_max_profile_version_of_user_from_db(
             user_id=partner.id
         )
-        conversation = await create_new_conversation_for_users_in_db(
+        conversation_id = await create_new_conversation_for_users_in_db(
             user_id=user_id,
             user_profile_version=user_profile_version,
             partner_id=partner.id,
             patner_profile_version=partner_profile_version,
         )
-        if conversation is None:
+        if conversation_id is None:
             await logger.error(
                 msg=f"Conversation was not created. User_id: {user_id}, partner_id: {partner.id}",
                 chat_id=user_id,
@@ -105,7 +99,7 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
             return False
         else:
             logger.sync_debug(
-                f"Conversation created. Conversation_id: {conversation.id}"
+                f"Conversation created. Conversation_id: {conversation_id} = User_id: {user_id}, partner_id: {partner.id}",
             )
 
         # Update the state for both users
@@ -134,9 +128,6 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
             chat_id=partner.id,
         )
 
-        # TODO:Check state management logic!
-        await state.set_state(CommonStates.default)
-        await partner_context.set_state(CommonStates.default)
 
 
 async def state_user_is_in_chatting_progress_handler(message: types.Message) -> None:

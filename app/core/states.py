@@ -40,7 +40,7 @@ async def initialize_states_for_chatter_to_start_conversation(
     await state.update_data(disclosure_level=-1)
 
 
-def get_user_context(user_id: int) -> FSMContext:
+async def get_user_context(user_id: int) -> FSMContext:
     user_context = FSMContext(
         dispatcher.storage,
         StorageKey(chat_id=user_id, user_id=user_id, bot_id=bot_instance.id),

@@ -12,6 +12,7 @@ from models.user import User
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from utils.debug import logger
+from sqlalchemy.orm import aliased
 
 
 def __message_entities_to_dict__(
@@ -337,26 +338,23 @@ async def set_conversation_inactive(conversation_id: int) -> None:
 
 async def get_new_partner_for_conversation_for_user_from_db(user_id):
     session = SessionLocal()
-    # Step 1: Find a chat partner
-    # Query for users who are ready to chat and whom the current user has never chatted with before
     potential_partners = (
         session.query(User)
         .filter(
-            User.is_ready_to_chat is True,
-            User.id != user_id,  # Exclude the current user from the results
-            ~session.query(Conversation)
-            .filter(
-                (Conversation.user1_id == user_id) & (Conversation.user2_id == User.id)
-                | (Conversation.user2_id == user_id)
-                & (Conversation.user1_id == User.id)
+            User.is_ready_to_chat == True,
+            User.id != user_id,
+            ~User.id.in_(
+                session.query(Conversation.user1_id)
+                .filter(Conversation.user1_id == user_id)
+                .union(
+                    session.query(Conversation.user2_id)
+                    .filter(Conversation.user2_id == user_id)
+                )
             )
-            .exists(),
         )
         .all()
     )
-
-    session.close()
-    # Step 2: Choose a chat partner
+    
     if potential_partners:
         partner = random.choice(potential_partners)
         return partner
@@ -407,13 +405,15 @@ async def create_new_conversation_for_users_in_db(
     try:
         conversation = Conversation(
             user1_id=user_id,
+            user1_profile_version=user_profile_version,           
             user2_id=partner_id,
+            user2_profile_version=patner_profile_version,
             start_time=datetime.now(),
             is_active=True,
         )
         session.add(conversation)
         session.commit()
-
+        conversation_id = conversation.id
     except SQLAlchemyError as e:
         session.rollback()
         await logger.error(
@@ -425,7 +425,7 @@ async def create_new_conversation_for_users_in_db(
         raise e
     finally:
         session.close()
-        return conversation
+        return conversation_id
 
 
 async def get_tiered_profile_message_from_db(
