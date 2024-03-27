@@ -3,6 +3,7 @@ from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from core.bot import bot_instance
+from database.engine import get_session
 
 # , state_user_is_ready_to_chat_handler
 from core.states import RegistrationStates, UserStates
@@ -53,9 +54,10 @@ user_router = Router()
 
 @user_router.message(Command(commands=["unregister"]))
 async def cmd_user_unregister(message: types.Message, state: FSMContext) -> None:
-    await save_telegram_message(
-        message=message, message_source=MessageSource.command_received
-    )
+    with get_session() as session:
+        await save_telegram_message(session=session,
+            message=message, message_source=MessageSource.command_received
+        )
     await cmd_unregister(message, state)
 
 
@@ -63,9 +65,10 @@ async def cmd_user_unregister(message: types.Message, state: FSMContext) -> None
 # TODO: handle start command corrtectly
 @user_router.message(Command(commands=["start"]))
 async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
-    await save_telegram_message(
-        message=message, message_source=MessageSource.command_received
-    )
+    with get_session() as session:
+        await save_telegram_message(session=session,
+            message=message, message_source=MessageSource.command_received
+        )
     logger.sync_debug("'/start' command received")
     await cmd_start(message, state)
 
@@ -87,27 +90,30 @@ async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
 # The user starts a registration process
 @user_router.message(Command(commands=["register"]))
 async def cmd_user_register_start(message: types.Message, state: FSMContext) -> None:
-    await save_telegram_message(
-        message=message, message_source=MessageSource.command_received
-    )
+    with get_session() as session:
+        await save_telegram_message(session=session,
+            message=message, message_source=MessageSource.command_received
+        )
     logger.sync_debug("'/register' command received")
     await cmd_register(message, state)
 
 
 @user_router.message(Command(commands=["next_please"]))
 async def cmd_next_please(message: types.Message, state: FSMContext) -> None:
-    await save_telegram_message(
-        message=message, message_source=MessageSource.command_received
-    )
+    with get_session() as session:
+        await save_telegram_message(session=session,
+            message=message, message_source=MessageSource.command_received
+        )
     logger.sync_debug("'/next_please' command received")
     await next_please_handler(message, state)
 
 
 @user_router.message(Command(commands=["show_my_profile"]))
 async def cmd_user_show_my_profile(message: types.Message) -> None:
-    await save_telegram_message(
-        message=message, message_source=MessageSource.command_received
-    )
+    with get_session() as session:
+        await save_telegram_message(session=session,
+            message=message, message_source=MessageSource.command_received
+        )
     logger.sync_debug("'/show_my_profile' command received")
     for i in range(0, message_tiers_count.MESSAGE_TIERS_COUNT):
         await send_tiered_partner_s_message_to_user(
@@ -117,9 +123,10 @@ async def cmd_user_show_my_profile(message: types.Message) -> None:
 
 @user_router.message(Command(commands=["start_chatting"]))
 async def cmd_user_start_chatting(message: types.Message, state: FSMContext) -> None:
-    await save_telegram_message(
-        message=message, message_source=MessageSource.command_received
-    )
+    with get_session() as session:
+        await save_telegram_message(session=session,
+            message=message, message_source=MessageSource.command_received
+        )
     logger.sync_debug("'/start_chatting' command received")
     await cmd_start_chatting(message, state)
     # await state.set_state(UserStates.ready_to_chat)
@@ -153,7 +160,8 @@ async def state_user_is_in_chatting_progress(
 @user_router.message()
 async def default_message_handler(message: types.Message, state: FSMContext) -> None:
     logger.sync_debug("Default message handler...")
-    await save_telegram_message(
-        message=message, message_source=MessageSource.bot_message_received
-    )
+    with get_session() as session:
+        await save_telegram_message(session=session,
+            message=message, message_source=MessageSource.bot_message_received
+        )
     await default_handler(message, state)

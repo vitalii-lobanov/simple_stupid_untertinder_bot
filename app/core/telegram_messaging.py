@@ -5,7 +5,8 @@ from aiogram.fsm.context import FSMContext
 from utils.text_messages import message_this_is_bot_message
 from aiogram import types
 from core.bot import bot_instance
-
+from sqlalchemy.orm import Session
+from database.engine import get_session
 # from app.tasks.tasks import celery_app
 from models import Message
 from utils.debug import logger
@@ -19,11 +20,15 @@ from services.dao import (
 
 
 async def send_reconstructed_telegram_message_to_user(
-    message: Message, user_id: int
+    message: Message = None, 
+    user_id: int = -1
 ) -> None:
 
 
     if message is not None:
+        # if not session.contains(message):
+        #     session.add(message)
+        # session.refresh(message)
 
         if message.original_sender_id is not None:
             message_text = message_this_message_is_forwarded(
@@ -122,14 +127,16 @@ async def send_tiered_partner_s_message_to_user(
         else:
             id = partner_id
         profile_version = current_partner_profile_version
-        tiered_message = await get_tiered_profile_message_from_db(
-            user_id=id,
-            tier=tier,
-            profile_version=profile_version,
-        )
-        await send_reconstructed_telegram_message_to_user(
-            message=tiered_message, user_id=user_id
-        )
+        with get_session() as session:
+            tiered_message = await get_tiered_profile_message_from_db(
+                session=session,
+                user_id=id,
+                tier=tier,
+                profile_version=profile_version,
+            )
+            await send_reconstructed_telegram_message_to_user(
+                message=tiered_message, user_id=user_id
+            )
     except Exception as e:
         logger.sync_error(msg=f"Error sending tiered profile message: {e}")
         raise e

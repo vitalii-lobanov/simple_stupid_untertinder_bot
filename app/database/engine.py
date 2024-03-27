@@ -6,6 +6,7 @@ from models.base import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from utils.debug import logger
+from contextlib import contextmanager
 
 if os.getenv("LOG_LEVEL") == "DEBUG":
     engine = create_engine(DATABASE_URI, echo=True)
@@ -13,7 +14,8 @@ else:
     engine = create_engine(DATABASE_URI, echo=False)
 
 logger.sync_debug("Database URI: {}".format(DATABASE_URI))
-SessionLocal = sessionmaker(bind=engine)
+__SessionLocal__ = SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+#sessionmaker(bind=engine)
 
 
 def initialize_db() -> None:
@@ -34,6 +36,18 @@ def initialize_db() -> None:
         logger.sync_error("Failed to create tables: {}".format(e), exc_info=True)
         raise
 
+@contextmanager
+def get_session():
+    """Provide a transactional scope around a series of operations."""
+    session = __SessionLocal__()
+    try:
+        yield session
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
 
-def get_db_session():
-    return SessionLocal()
+# def get_db_session():
+#     return SessionLocal()

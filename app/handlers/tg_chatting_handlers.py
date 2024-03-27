@@ -5,6 +5,7 @@ from aiogram import types
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReactionTypeEmoji
 from core.bot import bot_instance
+from database.engine import get_session
 
 # from app.tasks.tasks import celery_app
 from core.states import (
@@ -142,16 +143,18 @@ async def state_user_is_in_chatting_progress_handler(message: types.Message, sta
     if conversation_id is not None:
         partner_id = await get_conversation_partner_id_from_db(user_id=user_id)
         if not await check_user_state(user_id=partner_id, state=UserStates.chatting_in_progress):
-            raise Exception(f"Partner is not in state 'chatting_in_progress'. User_id: {user_id}, partner_id: {partner_id}")
+            raise Exception(f"Partner is not in state 'chatting_in_progress'. User_id: {user_id}, partner_id: {partner_id}")        
         if partner_id is not None:
-            reconstructed_message = await save_telegram_message(
-                message=message,
-                message_source=MessageSource.conversation,
-                conversation_id=conversation_id,
-            )
-            await send_reconstructed_telegram_message_to_user(
-                message=reconstructed_message, user_id=partner_id
-            )
+            with get_session() as session:
+                reconstructed_message = await save_telegram_message(
+                    session=session,
+                    message=message,
+                    message_source=MessageSource.conversation,
+                    conversation_id=conversation_id,
+                )
+                await send_reconstructed_telegram_message_to_user(
+                    message=reconstructed_message, user_id=partner_id
+                )
         else:
             await logger.error(
                 msg="Partner ID is None in state_user_is_in_chatting_progress_handler. Please contact support."
