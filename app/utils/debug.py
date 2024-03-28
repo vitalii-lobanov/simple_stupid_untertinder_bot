@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 import os
 from core.states import UserStates
 from utils.text_messages import message_this_is_bot_message
-
+import bleach
 
 
 #We cannot import 'send_service_message' from 'telegram_messaging' module
@@ -21,8 +21,9 @@ async  def __send_service_message__(
         tg_chat_id = None
         raise ValueError("Either state or chat_id must be provided")
     msg = f"{message_this_is_bot_message()}{message}"
+    msg = bleach.clean(msg)
     await bot_instance.send_message(chat_id=tg_chat_id, text=msg, parse_mode="HTML")
-
+   
 class CustomColorLogger(logging.Logger):
     def __init__(self, name, level=logging.NOTSET):
         # TODO: check whether it considers the log level from the envinronment

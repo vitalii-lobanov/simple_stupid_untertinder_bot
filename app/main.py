@@ -14,7 +14,7 @@ logger.sync_debug("Redis URL: {}".format(REDIS_URL))
 
 async def main():
     # Initialize database
-    initialize_db()
+    await initialize_db()
     logger.sync_debug('Database initialized successfully.')
 
     # Include the router in the dispatcher
@@ -24,11 +24,11 @@ async def main():
     logger.sync_debug('Initializing complete.')
     await dispatcher.start_polling(bot_instance)
 
-
 if __name__ == "__main__":
     asyncio.run(main())
 
 # TODO: look TODO's
+# Try Trunk Check extension instead of ruff
 # TODO: -> and argument types for functions
 # TODO: looak at all the .get_state() and change them to check_user_state() from core.states
 # TODO: save all the messages in the database. Use all the handlers. Add saving from logger and bot_service_message | ??

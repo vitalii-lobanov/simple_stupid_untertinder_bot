@@ -84,7 +84,7 @@ async def complete_registration(message: types.Message, state: FSMContext) -> No
     user_id = message.from_user.id
     user = await get_user_from_db(user_id)
     if user is not None:
-        set_is_active_flag_for_user_in_db(user_id, True)
+        await set_is_active_flag_for_user_in_db(user_id, True)
         await send_service_message(
             message=message_your_profile_message_saved_and_profile_successfully_filled_up(),
             chat_id=user_id,

@@ -9,6 +9,7 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     String,
+    BIGINT
 )
 from sqlalchemy.orm import relationship
 
@@ -16,15 +17,12 @@ from sqlalchemy.orm import relationship
 class Message(Base):
     __tablename__ = "messages"
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    message_id = Column(Integer, ForeignKey("messages.id"))
+    user_id = Column(BIGINT, ForeignKey("users.id"))
+    tg_message_id = Column(Integer)
     message_source = Column(Enum(MessageSource))
     conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=True)
     text = Column(String)
     user_profile_version = Column(Integer)
-    reactions = relationship(
-        "Reaction", backref="message", foreign_keys="[Reaction.sender_message_id]"
-    )
     timestamp = Column(DateTime)
     tier = Column(Integer)
     audio = Column(LargeBinary)
@@ -58,18 +56,24 @@ class Message(Base):
     video = Column(LargeBinary)
     original_sender_id = Column(Integer)
     original_sender_username = Column(String)
-    sender_in_conversation_id = Column(Integer)
+    sender_in_conversation_id = Column(BIGINT)
 
     user = relationship("User", back_populates="messages")
     conversation = relationship("Conversation", back_populates="messages")
     profile_data = relationship(
         "ProfileData", order_by=ProfileData.id, back_populates="message"
     )
+    # # reactions = relationship(
+    # #     "Reaction", backref="message_reactions", foreign_keys="[Reaction.tg_message_id]"
+    # # )
     # reactions = relationship(
-    #     "Reaction", backref="message_reactions", foreign_keys="[Reaction.message_id]"
+    #     "Reaction",
+    #     back_populates="message",
+    #     foreign_keys="[Reaction.tg_message_id]"
     # )
-    reactions = relationship(
-        "Reaction",
-        back_populates="message",
-        foreign_keys="[Reaction.message_id]"
-    )
+
+    # reactions = relationship(
+    #     "Reaction", backref="message", foreign_keys="[Reaction.sender_message_id]"
+    # )
+
+    reactions = relationship("Reaction", back_populates="message")

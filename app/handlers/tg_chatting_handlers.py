@@ -68,57 +68,58 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
     # TODO: test this logic!
     user_readiness = await state.get_state()
     if user_readiness != UserStates.ready_to_chat:
-        return
+        return    
 
     try:
-        partner = await get_new_partner_for_conversation_for_user_from_db(user_id)
-        if partner is None:
-            await send_service_message(
-                message=message_no_partners_ready_to_chat_available_we_will_inform_you_later(),
+        async with get_session() as session:
+            partner = await get_new_partner_for_conversation_for_user_from_db(session=session, user_id=user_id)
+            if partner is None:
+                await send_service_message(
+                    message=message_no_partners_ready_to_chat_available_we_will_inform_you_later(),
+                    chat_id=user_id,
+                )
+                return            
+            
+            user_profile_version = await get_max_profile_version_of_user_from_db(user_id=user_id)
+            partner_profile_version = await get_max_profile_version_of_user_from_db(
+                user_id=partner.id
+            )
+            conversation= await create_new_conversation_for_users_in_db(
+                user_id=user_id,
+                user_profile_version=user_profile_version,
+                partner_id=partner.id,
+                patner_profile_version=partner_profile_version,
+            )
+            if conversation is None:
+                await logger.error(
+                    msg=f"Conversation was not created. User_id: {user_id}, partner_id: {partner.id}",
+                    chat_id=user_id,
+                )
+                await logger.error(
+                    msg=f"Conversation was not created. User_id: {user_id}, partner_id: {partner.id}",
+                    chat_id=partner.id,
+                )
+                return False
+            else:
+                logger.sync_debug(
+                    f"Conversation created. Conversation_id: {conversation.id} = User_id: {user_id}, partner_id: {partner.id}",
+                )
+
+            # Update the state for both users
+            partner_context = await get_user_context(user_id=partner.id)
+            await initialize_states_for_chatter_to_start_conversation(state=state)
+            await initialize_states_for_chatter_to_start_conversation(state=partner_context)
+
+            # Inform both the users and log
+            await logger.info(
+                msg=message_you_now_connected_to_the_conversation_partner(),
                 chat_id=user_id,
             )
-            return            
-        
-        user_profile_version = await get_max_profile_version_of_user_from_db(user_id=user_id)
-        partner_profile_version = await get_max_profile_version_of_user_from_db(
-            user_id=partner.id
-        )
-        conversation_id = await create_new_conversation_for_users_in_db(
-            user_id=user_id,
-            user_profile_version=user_profile_version,
-            partner_id=partner.id,
-            patner_profile_version=partner_profile_version,
-        )
-        if conversation_id is None:
-            await logger.error(
-                msg=f"Conversation was not created. User_id: {user_id}, partner_id: {partner.id}",
-                chat_id=user_id,
-            )
-            await logger.error(
-                msg=f"Conversation was not created. User_id: {user_id}, partner_id: {partner.id}",
+
+            await logger.info(
+                msg=message_a_conversation_partner_found(),
                 chat_id=partner.id,
             )
-            return False
-        else:
-            logger.sync_debug(
-                f"Conversation created. Conversation_id: {conversation_id} = User_id: {user_id}, partner_id: {partner.id}",
-            )
-
-        # Update the state for both users
-        partner_context = await get_user_context(user_id=partner.id)
-        await initialize_states_for_chatter_to_start_conversation(state=state)
-        await initialize_states_for_chatter_to_start_conversation(state=partner_context)
-
-        # Inform both the users and log
-        await logger.info(
-            msg=message_you_now_connected_to_the_conversation_partner(),
-            chat_id=user_id,
-        )
-
-        await logger.info(
-            msg=message_a_conversation_partner_found(),
-            chat_id=partner.id,
-        )
 
     except Exception as e:
         await logger.error(
@@ -137,32 +138,30 @@ async def state_user_is_in_chatting_progress_handler(message: types.Message, sta
     user_id = message.from_user.id
     if not await check_user_state(user_id=user_id, state=UserStates.chatting_in_progress):
         return
-    
-    conversation = await get_currently_active_conversation_for_user_from_db(user_id=user_id)
-    conversation_id = conversation['conversation_id']
-    if conversation_id is not None:
-        partner_id = await get_conversation_partner_id_from_db(user_id=user_id)
-        if not await check_user_state(user_id=partner_id, state=UserStates.chatting_in_progress):
-            raise Exception(f"Partner is not in state 'chatting_in_progress'. User_id: {user_id}, partner_id: {partner_id}")        
-        if partner_id is not None:
-            with get_session() as session:
-                reconstructed_message = await save_telegram_message(
-                    session=session,
-                    message=message,
-                    message_source=MessageSource.conversation,
-                    conversation_id=conversation_id,
-                )
-                await send_reconstructed_telegram_message_to_user(
-                    message=reconstructed_message, user_id=partner_id
+    with get_session() as session:    
+        conversation = await get_currently_active_conversation_for_user_from_db(user_id=user_id) 
+        if conversation.id is not None:
+            partner_id = await get_conversation_partner_id_from_db(user_id=user_id)
+            if not await check_user_state(user_id=partner_id, state=UserStates.chatting_in_progress):
+                raise Exception(f"Partner is not in state 'chatting_in_progress'. User_id: {user_id}, partner_id: {partner_id}")        
+            
+            if partner_id is not None:            
+                    reconstructed_message = await save_telegram_message(                    
+                        message=message,
+                        message_source=MessageSource.conversation,
+                        conversation_id=conversation.id,
+                    )
+                    await send_reconstructed_telegram_message_to_user(
+                        message=reconstructed_message, user_id=partner_id
+                    )
+            else:
+                await logger.error(
+                    msg="Partner ID is None in state_user_is_in_chatting_progress_handler. Please contact support."
                 )
         else:
             await logger.error(
-                msg="Partner ID is None in state_user_is_in_chatting_progress_handler. Please contact support."
+                msg="Conversation is None in state_user_is_in_chatting_progress_handler. Please contact support."
             )
-    else:
-        await logger.error(
-            msg="Conversation is None in state_user_is_in_chatting_progress_handler. Please contact support."
-        )
 
 
 async def update_user_score_in_conversation(state: FSMContext, delta: float) -> int:
@@ -222,11 +221,11 @@ async def message_reaction_handler(
         )
 
     message_from_db = await get_message_for_given_conversation_from_db(
-        message_id=message_reaction.message_id, conversation_id=conversation['conversation_id']
+        message_id=message_reaction.tg_message_id, conversation_id=conversation['conversation_id']
     )
     if message_from_db is None:
         message_from_db = await get_message_in_inactive_conversations_from_db(
-            message_id=message_reaction.message_id
+            message_id=message_reaction.tg_message_id
         )
         if message_from_db is not None:
             await logger.error(
@@ -286,7 +285,7 @@ async def message_reaction_handler(
         rank = ranker.get_rank(emoji) * inverse_multiplier
 
         message = await get_message_for_given_conversation_from_db(
-            message_id=message_reaction.message_id, conversation_id=conversation.id
+            message_id=message_reaction.tg_message_id, conversation_id=conversation.id
         )
         message_id = message.id
 

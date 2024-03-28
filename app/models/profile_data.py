@@ -1,12 +1,12 @@
 from models.base import Base
-from sqlalchemy import Column, ForeignKey, Integer
+from sqlalchemy import Column, ForeignKey, Integer, BIGINT
 from sqlalchemy.orm import relationship
 
 
 class ProfileData(Base):
     __tablename__ = "profile_data"
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(BIGINT, ForeignKey("users.id"))
     message_id = Column(Integer, ForeignKey("messages.id"))
     profile_version = Column(Integer)
 

@@ -88,7 +88,7 @@ async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
 
 async def cmd_register(message: types.Message, state: FSMContext) -> None:
     user_id = message.from_user.id
-    user = await get_user_from_db(user_id)
+    user = await get_user_from_db(user_id=user_id)
     user_state = await state.get_state()
     if user_state != CommonStates.default:
         await send_service_message(

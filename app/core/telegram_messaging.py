@@ -10,7 +10,9 @@ from database.engine import get_session
 # from app.tasks.tasks import celery_app
 from models import Message
 from utils.debug import logger
-
+import bleach
+from database.engine import manage_db_session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from utils.text_messages import message_this_message_is_forwarded
 from services.dao import (
@@ -93,7 +95,7 @@ async def send_reconstructed_telegram_message_to_user(
                 user_id, document=message.document, caption=caption
             )
         # If there is only text, send it
-        elif message.text is not None:
+        elif message.text is not None:            
             await bot_instance.send_message(
                 chat_id=user_id, text=message.text, entities=message.entities
             )
@@ -109,13 +111,16 @@ async def send_service_message(message: str, state: FSMContext = None, chat_id: 
         tg_chat_id = None
         raise ValueError("Either state or chat_id must be provided")
     msg = f"{message_this_is_bot_message()}{message}"
+    msg = bleach.clean(msg)
     await bot_instance.send_message(chat_id=tg_chat_id, text=msg, parse_mode="HTML")
 
 
-async def send_tiered_partner_s_message_to_user(    
+@manage_db_session
+async def send_tiered_partner_s_message_to_user(        
     user_id: int = 0,
     partner_id: int = 0,
     tier: int = -1,
+    session: AsyncSession = None,
 ) -> None:
     try:        
         current_partner_profile_version = await get_max_profile_version_of_user_from_db(
@@ -127,16 +132,16 @@ async def send_tiered_partner_s_message_to_user(
         else:
             id = partner_id
         profile_version = current_partner_profile_version
-        with get_session() as session:
-            tiered_message = await get_tiered_profile_message_from_db(
-                session=session,
-                user_id=id,
-                tier=tier,
-                profile_version=profile_version,
-            )
-            await send_reconstructed_telegram_message_to_user(
-                message=tiered_message, user_id=user_id
-            )
+        
+        tiered_message = await get_tiered_profile_message_from_db(
+            session=session,
+            user_id=id,
+            tier=tier,
+            profile_version=profile_version,
+        )
+        await send_reconstructed_telegram_message_to_user(
+            message=tiered_message, user_id=user_id
+        )
     except Exception as e:
         logger.sync_error(msg=f"Error sending tiered profile message: {e}")
         raise e
