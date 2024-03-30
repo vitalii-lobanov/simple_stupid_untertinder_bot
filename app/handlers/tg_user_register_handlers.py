@@ -17,6 +17,7 @@ from utils.text_messages import (
     message_profile_message_received_please_send_the_remaining,
     message_registration_failed,
     message_your_profile_message_saved_and_profile_successfully_filled_up,
+    message_your_message_is_bad_and_was_not_saved,
 )
 
 # from app.tasks.tasks import celery_app
@@ -124,8 +125,13 @@ async def receiving_messages_on_registration_handler(
             user_id=message.from_user.id
         )
         message_count = await increment_message_count(message, state)
-        await save_tiered_registration_message(message=message, message_count=message_count, profile_version = user_profile_version)
-        await check_message_threshold(message, state, message_count)
+        if not await save_tiered_registration_message(message=message, message_count=message_count, profile_version = user_profile_version):
+            await send_service_message(
+                message=message_your_message_is_bad_and_was_not_saved(),
+                chat_id=message.from_user.id,
+            )
+        else:    
+            await check_message_threshold(message, state, message_count)
     else:
         await logger.error(
             msg=f"Unexpected state encountered while receiving messages on registration: {state}",

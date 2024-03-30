@@ -12,3 +12,13 @@ DATABASE_URI = "postgresql+asyncpg://pgsql_user:mb3L*nYTg7C!eBMC@localhost:5432/
 
 # TODO: set correct values
 NEXT_PLEASE_WAITING_TIMEOUT = 3
+
+app_directory = os.path.dirname(os.path.abspath(__file__))
+root_directory = os.path.dirname(app_directory)
+downloads_path = os.path.join(root_directory, 'downloads')
+if not os.path.exists(downloads_path):
+    os.makedirs(downloads_path)
+
+DOWNLOAD_PATH = downloads_path
+
+

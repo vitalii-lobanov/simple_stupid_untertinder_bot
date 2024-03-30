@@ -128,3 +128,9 @@ def message_your_profile_message_saved_and_profile_successfully_filled_up():
 
 def message_you_reacted_messge_from_another_conversation():
     return "You reacted message from another conversation. Please do not react messagef from the other conversations."
+
+def message_file_is_too_large_use_files_less_20_MB():
+    return "File is too large. Please use files less than 20 MB."
+
+def message_your_message_is_bad_and_was_not_saved():
+    return "Your message is bad and was not saved. Please try again. If you send file, please use files less than 20 MB."

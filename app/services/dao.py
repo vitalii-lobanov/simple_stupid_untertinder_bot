@@ -1,25 +1,25 @@
+import os
 import random
 from datetime import datetime
+from functools import wraps
 from typing import Any, Dict, List, Optional, Union
 
-from aiogram import types
-from database.engine import get_session
+from aiogram import Bot, types
+from config import BOT_TOKEN, DOWNLOAD_PATH
+from database.engine import get_session, manage_db_session
 from models import Conversation, ProfileData
 from models.base import MessageSource
 from models.message import Message
 from models.reaction import Reaction
 from models.user import User
+from services.tg_helpers import download_telegram_file, get_telegram_file
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
-from utils.debug import logger
-from sqlalchemy.orm import aliased
-from sqlalchemy.orm import Session
-from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from functools import wraps
-from database.engine import manage_db_session
-
+from sqlalchemy.orm import Session, aliased
+from utils.debug import logger
+import json
 
 def __message_entities_to_dict__(
     entities: List[types.MessageEntity],
@@ -59,8 +59,21 @@ def __link_preview_options_to_dict__(
     return None
 
 
-
 # TODO: handle other media types. Especially message_source (enum from base(?))
+
+
+def __get_multimedia_paths_from_message__(message: types.Message) -> dict:
+    return {
+        "audio": message.audio.file_id if message.audio else None,
+        "document": message.document.file_id if message.document else None,
+        "photo": message.photo[-1].file_id if message.photo else None,
+        "sticker": message.sticker.file_id if message.sticker else None,
+        "video": message.video.file_id if message.video else None,
+        "voice": message.voice.file_id if message.voice else None,
+        "video_note": message.video_note.file_id if message.video_note else None,
+        "animation": message.animation.file_id if message.animation else None,
+    }
+
 
 @manage_db_session
 async def save_telegram_message(
@@ -69,20 +82,33 @@ async def save_telegram_message(
     message_source: MessageSource = None,
     tier: int = -1,
     conversation_id: int = None,
-    profile_version: int = -1
+    profile_version: int = -1,
 ) -> Message:
-    
-
-    
     user_id = message.from_user.id
     message_id = message.message_id
-    photo = None
-   
+    
     # Extract the file ID of the largest photo
-    if message.photo:
-        photo = message.photo[
-            -1
-        ].file_id  # Get the file_id of the last (largest) photo size
+    # if message.photo:
+    #     photo = message.photo[
+    #         -1
+    #     ].file_id  # Get the file_id of the last (largest) photo size
+
+    from_user_data = vars(message.from_user)
+    from_user_json = json.dumps(from_user_data)
+
+    multimedia_list = __get_multimedia_paths_from_message__(message)
+    for key, value in multimedia_list.items():
+        if value is not None:
+            try:
+                downloaded_file = await download_telegram_file(file_id=value)
+                if not downloaded_file:
+                    return False
+                else:
+                    multimedia_list[key] = await download_telegram_file(file_id=value)
+            except Exception as e:
+                logger.sync_error(msg=f"Error downloading multimedia: {e}")
+                return False
+                #raise e
 
     try:
         new_message = Message(
@@ -93,11 +119,15 @@ async def save_telegram_message(
             conversation_id=conversation_id,
             user_profile_version=profile_version,
             text=message.text or None,
-            audio=message.audio.file_id if message.audio else None,
-            video=message.video.file_id if message.video else None,
-            document=message.document.file_id if message.document else None,
-            animation=message.animation.file_id if message.animation else None,
-            sticker=message.sticker.file_id if message.sticker else None,
+            audio=multimedia_list["audio"],
+            video = multimedia_list["video"],
+            sticker=multimedia_list["sticker"],
+            voice=multimedia_list["voice"], 
+            video_note=multimedia_list["video_note"],
+            animation=multimedia_list["animation"],   
+            image=multimedia_list["photo"],
+            document=multimedia_list["document"],
+            photo=multimedia_list["photo"],            
             author_signature=message.author_signature
             if message.author_signature
             else None,
@@ -112,7 +142,7 @@ async def save_telegram_message(
             else None,
             contact=message.contact if message.contact else None,
             forward_date=message.forward_date if message.forward_date else None,
-            from_user=str(message.from_user).encode() if message.from_user else None,
+            from_user=from_user_json if from_user_json else None,
             game=message.game if message.game else None,
             dice=message.dice if message.dice else None,
             html_text=message.html_text if message.html_text else None,
@@ -131,55 +161,59 @@ async def save_telegram_message(
             original_sender_username=message.forward_from.username
             if message.forward_from
             else None,
-            photo=photo if photo else None,
             poll=message.poll if message.poll else None,
             quote=message.quote if message.quote else None,
             story=message.story if message.story else None,
-            voice=message.voice if message.voice else None,
-            video_note=message.video_note if message.video_note else None,
-            sender_in_conversation_id=message.from_user.id
-            if message.from_user
-            else None,
+            sender_in_conversation_id=message.from_user.id if message.from_user else None,
         )
         session.add(new_message)
-        #session.commit()
+        # session.commit()
     except Exception as e:
-        #session.rollback()
+        # session.rollback()
         await logger.sync_error(msg=f"Failed to save message: {e}")
+        raise e
     # finally:
     #     #session.close()
-    
-      
+
     return new_message
 
 
-
 async def save_tiered_registration_message(
-    message: types.Message, message_count: int, profile_version: int,
-) -> None:
+    message: types.Message,
+    message_count: int,
+    profile_version: int,
+) -> bool:
     tier = message_count - 1
     message_source = MessageSource.registration_profile
 
+    user_id = message.from_user.id
     async with get_session() as session:
-        reconstructed_message = await save_telegram_message( 
-                                message=message, 
-                                message_source=message_source, 
-                                tier=tier, 
-                                profile_version=profile_version)
+        reconstructed_message = await save_telegram_message(
+            message=message,
+            message_source=message_source,
+            tier=tier,
+            profile_version=profile_version,
+        )
         if reconstructed_message:
             user_id = message.from_user.id
-            message_id = reconstructed_message.id        
-            profile_data = ProfileData(user_id=user_id, message_id=message_id)
+            message_id = reconstructed_message.id
+            profile_data = ProfileData(user_id=user_id, message_id=message_id)            
             try:
                 session.add(profile_data)
-                #session.commit()
+                return True                
             except Exception as e:
-                #session.rollback()
+                # session.rollback()
                 # Assuming you have a logger configured
-                await logger.error(msg=f"Failed to save profile data: {e}", chat_id=user_id)  
-        else:
-            await logger.error(msg=f"Failed to save profile data message: {message}", chat_id=user_id)
-            raise RuntimeError(f"Failed to save profile data message: {message}")
+                await logger.error(
+                    msg=f"Failed to save profile data: {e}", chat_id=user_id
+                )
+                return False
+        else:            
+            await logger.error(
+                msg=f"Failed to save profile data message: {message}", chat_id=user_id
+            )
+            return False
+
 
 @manage_db_session
 async def save_telegram_reaction(
@@ -192,22 +226,21 @@ async def save_telegram_reaction(
     rank: int = 0,
     session: AsyncSession = None,
 ) -> bool:
-    
     try:
         # Create a new Reaction instance
         reaction = Reaction(
             user_id=user_id,
             message_id=message_id,
-            tg_message_id = tg_message_id,
+            tg_message_id=tg_message_id,
             new_emoji=new_emoji,
             old_emoji=old_emoji,
             timestamp=timestamp,
-            #receiver_message_id=receiver_message_id,
+            # receiver_message_id=receiver_message_id,
             rank=rank,
         )
 
         # Add the new reaction to the session and commit
-        session.add(reaction)   
+        session.add(reaction)
         logger.sync_debug("Reaction saved.")
         return True
 
@@ -216,70 +249,81 @@ async def save_telegram_reaction(
         await logger.error(
             msg=f"SQLAlchemy error saving reaction: {e}", chat_id=user_id, exc_info=True
         )
-        #session.rollback()
+        # session.rollback()
         raise
     except Exception as e:
         # Handle any other exceptions
-        await logger.error(msg=f"Error saving reaction: {e}", chat_id=user_id, exc_info=True)        
+        await logger.error(
+            msg=f"Error saving reaction: {e}", chat_id=user_id, exc_info=True
+        )
         raise e
 
 
 @manage_db_session
 async def get_message_for_given_conversation_from_db(
-    message_id: int, 
-    conversation_id: int, 
-    session: AsyncSession = None
+    message_id: int, conversation_id: int, session: AsyncSession = None
 ) -> Message:
     try:
         result = await session.execute(
             select(Message)
             .join(Conversation, Message.conversation_id == Conversation.id)
-            .filter(Message.tg_message_id == message_id, Conversation.id == conversation_id)
+            .filter(
+                Message.tg_message_id == message_id, Conversation.id == conversation_id
+            )
         )
         message = result.scalars().first()
 
-        #Handle Telegram message numering, dirty hack
+        # Handle Telegram message numering, dirty hack
         message_id = message_id - 1
         if message is None:
             result = await session.execute(
-            select(Message)
-            .join(Conversation, Message.conversation_id == Conversation.id)
-            .filter(Message.tg_message_id == message_id, Conversation.id == conversation_id)
-        )
+                select(Message)
+                .join(Conversation, Message.conversation_id == Conversation.id)
+                .filter(
+                    Message.tg_message_id == message_id,
+                    Conversation.id == conversation_id,
+                )
+            )
         message = result.scalars().first()
 
         if message:
             return message
         else:
-            raise ValueError(f"No message found with ID {message_id} and conversation ID {conversation_id}")
+            raise ValueError(
+                f"No message found with ID {message_id} and conversation ID {conversation_id}"
+            )
     except Exception as e:
-        await logger.error(msg=f"Failed to retrieve message: {e}", chat_id=None)  # TODO: Replace None with actual chat_id if available
+        await logger.error(
+            msg=f"Failed to retrieve message: {e}", chat_id=None
+        )  # TODO: Replace None with actual chat_id if available
         raise e
+
 
 @manage_db_session
 async def get_currently_active_conversation_for_user_from_db(
-    user_id: int,
-    session: AsyncSession = None
-) -> Conversation | None:    
-
+    user_id: int, session: AsyncSession = None
+) -> Conversation | None:
     try:
         result = await session.execute(
-        select(Conversation).filter(
-            ((Conversation.user1_id == user_id) | (Conversation.user2_id == user_id)),
-            Conversation.is_active.is_(True)  # Use is_() for NULL-safe comparison
+            select(Conversation).filter(
+                (
+                    (Conversation.user1_id == user_id)
+                    | (Conversation.user2_id == user_id)
+                ),
+                Conversation.is_active.is_(True),  # Use is_() for NULL-safe comparison
             )
         )
-        conversation = result.scalars().first()       
+        conversation = result.scalars().first()
 
     except SQLAlchemyError as e:
-        #session.rollback()
+        # session.rollback()
         await logger.error(
             msg=f"SQLAlchemy error getting currently active conversation: {e}",
             user_id=user_id,
         )
         conversation = None
 
-    except Exception as e:        
+    except Exception as e:
         await logger.error(
             msg=f"Error getting currently active conversation for user_id {user_id}: {e}",
             chat_id=user_id,
@@ -289,8 +333,11 @@ async def get_currently_active_conversation_for_user_from_db(
     #     #session.close()
     return conversation
 
+
 @manage_db_session
-async def get_message_in_inactive_conversations_from_db(message_id: int, session: AsyncSession = None) -> Message:
+async def get_message_in_inactive_conversations_from_db(
+    message_id: int, session: AsyncSession = None
+) -> Message:
     try:
         result = await session.execute(
             select(Message)
@@ -300,61 +347,71 @@ async def get_message_in_inactive_conversations_from_db(message_id: int, session
         message = result.scalars().first()
         return message
     except Exception as e:
-        await logger.error(msg=f"Failed to retrieve message {message_id} from the database: {e}")
+        await logger.error(
+            msg=f"Failed to retrieve message {message_id} from the database: {e}"
+        )
         raise e
 
 
 # TODO: naming: get, set, check
-async def get_conversation_partner_id_from_db(user_id: int = 0, conversation: Optional[Conversation] = None, session: AsyncSession = None) -> int:
-
+async def get_conversation_partner_id_from_db(
+    user_id: int = 0,
+    conversation: Optional[Conversation] = None,
+    session: AsyncSession = None,
+) -> int:
     if not conversation:
         conversation = await get_currently_active_conversation_for_user_from_db(
             user_id=user_id, session=session
         )
         if not conversation:
             return None
-        
+
     if conversation.user1_id == user_id:
         return conversation.user2_id
     elif conversation.user2_id == user_id:
         return conversation.user1_id
     else:
         return None
-    
+
 
 @manage_db_session
-async def is_conversation_active(conversation_id: int, session: AsyncSession = None) -> bool:
+async def is_conversation_active(
+    conversation_id: int, session: AsyncSession = None
+) -> bool:
     try:
-            # Asynchronously query the conversation by ID
-            result = await session.execute(
-                select(Conversation)
-                .filter(Conversation.id == conversation_id)
-            )
-            conversation = result.scalars().first()
-            # Return the is_active status if the conversation is found
-            return conversation.is_active if conversation else False
+        # Asynchronously query the conversation by ID
+        result = await session.execute(
+            select(Conversation).filter(Conversation.id == conversation_id)
+        )
+        conversation = result.scalars().first()
+        # Return the is_active status if the conversation is found
+        return conversation.is_active if conversation else False
     except SQLAlchemyError as e:
-        logger.sync_error(msg=f"SQLAlchemy error checking if conversation is active: {e}")
+        logger.sync_error(
+            msg=f"SQLAlchemy error checking if conversation is active: {e}"
+        )
     except Exception as e:
-            logger.sync_error(msg=f"Error checking if conversation is active: {e}")
-            raise e
+        logger.sync_error(msg=f"Error checking if conversation is active: {e}")
+        raise e
+
 
 @manage_db_session
-async def set_conversation_inactive(conversation_id: int, session: AsyncSession = None) -> None:
-
+async def set_conversation_inactive(
+    conversation_id: int, session: AsyncSession = None
+) -> None:
     try:
         result = await session.execute(
-                select(Conversation).filter(Conversation.id == conversation_id)
-            )
+            select(Conversation).filter(Conversation.id == conversation_id)
+        )
         conversation = result.scalars().first()
         if conversation:
             conversation.is_active = False
-            #session.commit()
+            # session.commit()
         else:
             raise ValueError(f"No conversation found with ID {conversation_id}")
     except SQLAlchemyError as e:
         logger.sync_error(msg=f"SQLAlchemy error setting conversation inactive: {e}")
-        raise e    
+        raise e
     except Exception as e:
         logger.sync_error(msg=f"Error setting conversation inactive: {e}")
         raise e
@@ -362,20 +419,20 @@ async def set_conversation_inactive(conversation_id: int, session: AsyncSession 
         #     #session.close()
 
 
-
 @manage_db_session
-async def get_new_partner_for_conversation_for_user_from_db(user_id: int, session: AsyncSession = None) -> User | None:
+async def get_new_partner_for_conversation_for_user_from_db(
+    user_id: int, session: AsyncSession = None
+) -> User | None:
     subquery1 = select(Conversation.user1_id).filter(Conversation.user1_id == user_id)
     subquery2 = select(Conversation.user2_id).filter(Conversation.user2_id == user_id)
     subquery = subquery1.union(subquery2)
 
     try:
         result = await session.execute(
-            select(User)
-            .filter(
+            select(User).filter(
                 User.is_ready_to_chat.is_(True),
                 User.id != user_id,
-                ~User.id.in_(subquery)
+                ~User.id.in_(subquery),
             )
         )
         potential_partners = result.scalars().all()
@@ -386,34 +443,46 @@ async def get_new_partner_for_conversation_for_user_from_db(user_id: int, sessio
         else:
             return None
     except SQLAlchemyError as e:
-        await logger.error(msg=f"SQLAlchemy error getting new partner for conversation: {e}", chat_id=user_id)
+        await logger.error(
+            msg=f"SQLAlchemy error getting new partner for conversation: {e}",
+            chat_id=user_id,
+        )
         raise e
     except Exception as e:
-        await logger.error(msg=f"Error getting new partner for conversation: {e}", chat_id=user_id)
+        await logger.error(
+            msg=f"Error getting new partner for conversation: {e}", chat_id=user_id
+        )
         raise e
 
+
 @manage_db_session
-async def get_user_is_active_status_from_db(user_id: int, session: AsyncSession = None) -> bool:
+async def get_user_is_active_status_from_db(
+    user_id: int, session: AsyncSession = None
+) -> bool:
     try:
         result = await session.execute(select(User).filter(User.id == user_id))
         user = result.scalars().first()
         return user.is_active if user else False
     except SQLAlchemyError as e:
-        await logger.error(msg=f"SQLAlchemy error getting user active status: {e}", chat_id=user_id)
+        await logger.error(
+            msg=f"SQLAlchemy error getting user active status: {e}", chat_id=user_id
+        )
         return False
 
 
 @manage_db_session
-async def set_user_profile_version_in_db(user_id: int, profile_version: int, session: AsyncSession = None) -> bool:
+async def set_user_profile_version_in_db(
+    user_id: int, profile_version: int, session: AsyncSession = None
+) -> bool:
     try:
         # Asynchronously get the user by ID
         result = await session.execute(select(User).filter(User.id == user_id))
         user = result.scalars().first()
-        
+
         if user:
             # Set the new profile version
             user.profile_version = profile_version
-            
+
             # Commit the changes
             await session.commit()
             return True
@@ -421,11 +490,16 @@ async def set_user_profile_version_in_db(user_id: int, profile_version: int, ses
             # No user found, nothing to update
             return False
     except SQLAlchemyError as e:
-        await logger.error(msg=f"SQLAlchemy error setting user profile version: {e}", chat_id=user_id)
+        await logger.error(
+            msg=f"SQLAlchemy error setting user profile version: {e}", chat_id=user_id
+        )
         return False
     except Exception as e:
-        await logger.error(msg=f"Unexpected error setting user profile version: {e}", chat_id=user_id)
+        await logger.error(
+            msg=f"Unexpected error setting user profile version: {e}", chat_id=user_id
+        )
         raise e
+
 
 @manage_db_session
 async def create_new_conversation_for_users_in_db(
@@ -433,7 +507,7 @@ async def create_new_conversation_for_users_in_db(
     user_profile_version: int,
     partner_id: int,
     partner_profile_version: int,
-    session: AsyncSession = None
+    session: AsyncSession = None,
 ) -> Conversation | None:
     try:
         # Create a new Conversation instance
@@ -447,7 +521,7 @@ async def create_new_conversation_for_users_in_db(
         )
         session.add(conversation)
         await session.commit()  # Commit the changes
-        
+
         # Return the new conversation ID
         return conversation
     except SQLAlchemyError as e:
@@ -459,16 +533,20 @@ async def create_new_conversation_for_users_in_db(
 
 
 @manage_db_session
-async def get_tiered_profile_message_from_db(   
-    user_id: int = -1, 
-    tier: int = -1, 
+async def get_tiered_profile_message_from_db(
+    user_id: int = -1,
+    tier: int = -1,
     profile_version: int = -1,
     session: AsyncSession = None,
 ) -> Message:
     try:
         result = await session.execute(
             select(Message)
-            .filter(Message.user_id == user_id, Message.tier == tier, Message.user_profile_version == profile_version)
+            .filter(
+                Message.user_id == user_id,
+                Message.tier == tier,
+                Message.user_profile_version == profile_version,
+            )
             .order_by(Message.timestamp.desc())
         )
         tiered_message = result.scalars().first()
@@ -481,14 +559,13 @@ async def get_tiered_profile_message_from_db(
         raise e
 
 
-
 @manage_db_session
 async def save_user_to_db(user: User = None, session: AsyncSession = None) -> bool:
     try:
         session.add(user)
         await session.commit()
         return True
-    except SQLAlchemyError as e:        
+    except SQLAlchemyError as e:
         await logger.error(msg=f"SQLAlchemy error saving user: {e}")
         raise e
 
@@ -504,9 +581,11 @@ async def get_user_from_db(user_id: int = -1, session: AsyncSession = None) -> U
         await logger.error(msg=f"SQLAlchemy error getting user: {e}")
         raise
 
+
 @manage_db_session
-async def set_is_active_flag_for_user_in_db(user_id: int, is_active: bool, session: AsyncSession) -> bool:
-    
+async def set_is_active_flag_for_user_in_db(
+    user_id: int, is_active: bool, session: AsyncSession
+) -> bool:
     try:
         result = await session.execute(select(User).filter(User.id == user_id))
         user = result.scalars().first()
@@ -523,9 +602,7 @@ async def set_is_active_flag_for_user_in_db(user_id: int, is_active: bool, sessi
 
 @manage_db_session
 async def set_is_ready_to_chat_flag_for_user_in_db(
-    user_id: int, 
-    is_ready_to_chat: bool, 
-    session: AsyncSession = None
+    user_id: int, is_ready_to_chat: bool, session: AsyncSession = None
 ) -> bool:
     try:
         result = await session.execute(select(User).filter(User.id == user_id))
@@ -540,29 +617,37 @@ async def set_is_ready_to_chat_flag_for_user_in_db(
             )
     except SQLAlchemyError as e:
         await session.rollback()
-        await logger.error(msg=f"SQLAlchemy error during set_is_ready_to_chat_flag_for_user_in_db: {e}", chat_id=user_id)
+        await logger.error(
+            msg=f"SQLAlchemy error during set_is_ready_to_chat_flag_for_user_in_db: {e}",
+            chat_id=user_id,
+        )
         return False
     except Exception as e:
         await session.rollback()
-        await logger.error(msg=f"Error during set_is_ready_to_chat_flag_for_user_in_db: {e}", chat_id=user_id)
+        await logger.error(
+            msg=f"Error during set_is_ready_to_chat_flag_for_user_in_db: {e}",
+            chat_id=user_id,
+        )
         raise e
 
 
 @manage_db_session
 async def mark_user_as_inactive_in_db(user_id: int, session: AsyncSession) -> bool:
     user = await get_user_from_db(user_id)
-    if not user:                 
+    if not user:
         return False
     else:
-        if not user.is_active:   
+        if not user.is_active:
             return False
-        await set_is_active_flag_for_user_in_db(user_id=user_id, is_active=False, session=session)
+        await set_is_active_flag_for_user_in_db(
+            user_id=user_id, is_active=False, session=session
+        )
         return True
 
 
 @manage_db_session
-async def delete_user_profile_from_db(user_id: int, session: AsyncSession) -> bool:  
-    try:        
+async def delete_user_profile_from_db(user_id: int, session: AsyncSession) -> bool:
+    try:
         result = await session.execute(select(User).filter_by(id=user_id))
         user_profile = result.scalars().first()
 
@@ -574,37 +659,72 @@ async def delete_user_profile_from_db(user_id: int, session: AsyncSession) -> bo
         else:
             return False
     except Exception as e:
-            await logger.error(msg=f"Unregistration failed: {str(e)}", chat_id=user_id)
-            raise e
+        await logger.error(msg=f"Unregistration failed: {str(e)}", chat_id=user_id)
+        raise e
+
 
 @manage_db_session
-async def get_max_profile_version_of_user_from_db(user_id: int, session: AsyncSession = None) -> int:
+async def get_max_profile_version_of_user_from_db(
+    user_id: int, session: AsyncSession = None
+) -> int:
     try:
-        max_user1_profile_version_stmt = (
-            select(func.max(Conversation.user1_profile_version))
-            .where(Conversation.user1_id == user_id)
+        max_user1_profile_version_stmt = select(
+            func.max(Conversation.user1_profile_version)
+        ).where(Conversation.user1_id == user_id)
+        max_user1_profile_version_result = await session.execute(
+            max_user1_profile_version_stmt
         )
-        max_user1_profile_version_result = await session.execute(max_user1_profile_version_stmt)
         max_user1_profile_version = max_user1_profile_version_result.scalar() or 0
 
-        max_user2_profile_version_stmt = (
-            select(func.max(Conversation.user2_profile_version))
-            .where(Conversation.user2_id == user_id)
+        max_user2_profile_version_stmt = select(
+            func.max(Conversation.user2_profile_version)
+        ).where(Conversation.user2_id == user_id)
+        max_user2_profile_version_result = await session.execute(
+            max_user2_profile_version_stmt
         )
-        max_user2_profile_version_result = await session.execute(max_user2_profile_version_stmt)
         max_user2_profile_version = max_user2_profile_version_result.scalar() or 0
 
-        user_profile_version_stmt = (
-            select(User.profile_version)
-            .where(User.id == user_id)
+        user_profile_version_stmt = select(User.profile_version).where(
+            User.id == user_id
         )
         user_profile_version_result = await session.execute(user_profile_version_stmt)
         user_profile_version = user_profile_version_result.scalar() or 0
 
-        profile_version = max(max_user1_profile_version, max_user2_profile_version, user_profile_version)
+        profile_version = max(
+            max_user1_profile_version, max_user2_profile_version, user_profile_version
+        )
 
         return profile_version
     except SQLAlchemyError as e:
-        await logger.error(msg=f"SQLAlchemy error getting max profile version: {e}", chat_id=user_id)
+        await logger.error(
+            msg=f"SQLAlchemy error getting max profile version: {e}", chat_id=user_id
+        )
         raise e
 
+
+@manage_db_session
+async def save_file_and_store_path_in_db(
+    file_id: str, file_type: str, session: AsyncSession
+) -> str:
+    try:
+        # Get the file path from Telegram
+        file = get_telegram_file(file_id=file_id)
+        file_path = file.file_path
+
+        # Define the directory to save files based on their type
+        save_directory = f"saved_files/{file_type}"
+        if not os.path.exists(save_directory):
+            os.makedirs(save_directory)
+
+        # Full path where the file will be saved
+        save_path = os.path.join(save_directory, file_id)
+
+        # Download and save the file
+        await download_telegram_file(file_path, save_path)
+
+        # Return the path where the file was saved
+        return save_path
+
+    except Exception as e:
+        logger.sync_error(msg=f"Error saving file: {e}")
+        await session.rollback()
