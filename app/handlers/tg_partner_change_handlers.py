@@ -28,6 +28,19 @@ async def pause(time: int = 0) -> None:
     await asyncio.sleep(time)
 
 
+
+async def __perform_state_clearing_on_conversation_end__(state: FSMContext) -> bool:
+    user_state = await state.get_state()
+    if (user_state == UserStates.chatting_in_progress) or (
+        user_state == UserStates.wants_to_end_chatting
+    ):
+        await state.clear()
+        await state.set_state(UserStates.not_ready_to_chat)
+        return True
+    else:        
+        return False
+    
+
 async def __close_up_conversation__(
     message: types.Message, state: FSMContext, time_countdown: int
 ) -> bool:
@@ -39,16 +52,11 @@ async def __close_up_conversation__(
     await pause(time_countdown)
     logger.sync_debug("Timer ended")
 
-    user_state = await state.get_state()
-    if (user_state == UserStates.chatting_in_progress) or (
-        user_state == UserStates.wants_to_end_chatting
-    ):
-        await state.clear()
-        await state.set_state(UserStates.not_ready_to_chat)
-    else:
+    if not __perform_state_clearing_on_conversation_end__(state=state):
         await logger.info(msg=message_you_are_not_in_chatting_state, chat_id=user_id)
         return False
 
+        
     partner_id = await get_conversation_partner_id_from_db(user_id=user_id)
 
     partner_context = await access_user_context(
@@ -56,9 +64,16 @@ async def __close_up_conversation__(
     )
     partner_state = await partner_context.get_state()
 
-    if (partner_state == UserStates.chatting_in_progress) or (
-        partner_state == UserStates.wants_to_end_chatting
-    ):
+    if not await __perform_state_clearing_on_conversation_end__(state=partner_context):
+        await logger.error(
+        msg=f"Partner is not in a conversation. User_id: {user_id}, partner_id: {partner_id}, conversation partner state: {partner_state}",
+            state=state,
+        )
+        raise RuntimeError(
+            f"Partner is not in a conversation. User_id: {user_id}, partner_id: {partner_id}, conversation partner state: {partner_state}"
+        )
+        
+    else:
         await partner_context.clear()
         await partner_context.set_state(UserStates.not_ready_to_chat)
         conversation = await get_currently_active_conversation_for_user_from_db(
@@ -67,25 +82,15 @@ async def __close_up_conversation__(
         if await is_conversation_active(conversation_id=conversation.id):
             await set_conversation_inactive(conversation_id=conversation.id)
         return True
-    else:
-        await logger.error(
-            msg=f"Partner is not in a conversation. User_id: {user_id}, partner_id: {partner_id}, conversation partner state: {partner_state}",
-            state=state,
-        )
-        raise RuntimeError(
-            f"Partner is not in a conversation. User_id: {user_id}, partner_id: {partner_id}, conversation partner state: {partner_state}"
-        )
-
-    # TODO: return
 
 
 async def next_please_handler(message: types.Message, state: FSMContext) -> None:
     # TODO: REMOVE IT!!!!!!!!!!!!!!
-    # await state.set_state(UserStates.chatting_in_progress)
+    await state.set_state(UserStates.chatting_in_progress)
 
     user_state = await state.get_state()
     if user_state != UserStates.chatting_in_progress:
-        await logger.info(msg=message_you_are_not_in_chatting_state, state=state)
+        await logger.info(msg=message_you_are_not_in_chatting_state(), state=state)
         return
 
     user_id = message.from_user.id

@@ -39,7 +39,7 @@ async def async_drop_database(url):
             SELECT pg_terminate_backend(pg_stat_activity.pid)
             FROM pg_stat_activity
             WHERE pg_stat_activity.datname = $1
-              AND pid <> pg_backend_pid();
+                AND pid <> pg_backend_pid();
         """, db_name)  # noqa: F541
         
         # Execute DROP DATABASE command in autocommit mode

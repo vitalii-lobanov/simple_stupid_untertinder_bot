@@ -28,12 +28,25 @@ from utils.text_messages import (
     message_you_have_already_been_registered,
 )
 from core.states import RegistrationStates
+from services.dao import save_telegram_message
 
 from utils.debug import logger
-
+from models.message import MessageSource
 
 # TODO: all the cmd_ functions from handlers should be here
 
+
+
+async def save_received_telegram_message(message: types.Message) -> bool:
+    if not await get_user_from_db(user_id=message.from_user.id):
+        logger.sync_debug("User is not registered, so the message was not saved")
+        return False
+    else:       
+        await save_telegram_message(
+                message=message, message_source=MessageSource.command_received
+            )
+        return True
+    
 
 async def cmd_start(message: types.Message, state: FSMContext) -> None:
     # await save_telegram_message(message=message, message_source=MessageSource.command_received)
@@ -163,3 +176,4 @@ async def cmd_start_chatting(message: types.Message, state: FSMContext) -> None:
 
 async def default_handler(message: types.Message, state: FSMContext) -> None:
     pass
+

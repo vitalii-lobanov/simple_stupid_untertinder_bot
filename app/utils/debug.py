@@ -63,7 +63,7 @@ class CustomColorLogger(logging.Logger):
             return
 
     async def debug(
-        self, msg, state: FSMContext = None, chat_id: int = None, *args, **kwargs
+        self, msg, state: FSMContext = None, chat_id: int = None, exc_info=False, *args, **kwargs
     ):
         if self.forward_messages_to_tg_users:
             await self.__send_msg_to_user__(msg=msg, state=state, chat_id=chat_id)
@@ -78,12 +78,12 @@ class CustomColorLogger(logging.Logger):
             **kwargs,
         )
 
-    def sync_debug(self, msg, *args, **kwargs):
+    def sync_debug(self, msg,  exc_info=False, *args, **kwargs):
         self._log(
             logging.DEBUG,
             msg,
             args,
-            exc_info=None,
+            exc_info=exc_info,
             extra=None,
             stack_info=False,
             stacklevel=2,
@@ -91,7 +91,7 @@ class CustomColorLogger(logging.Logger):
         )
 
     async def info(
-        self, msg, state: FSMContext = None, chat_id: int = None, *args, **kwargs
+        self, msg, state: FSMContext = None, chat_id: int = None, exc_info=False, *args, **kwargs
     ):
         if self.forward_messages_to_tg_users:
             await self.__send_msg_to_user__(msg=msg, state=state, chat_id=chat_id)
@@ -99,19 +99,19 @@ class CustomColorLogger(logging.Logger):
             logging.INFO,
             msg,
             args,
-            exc_info=None,
+            exc_info=exc_info,
             extra=None,
             stack_info=False,
             stacklevel=2,
             **kwargs,
         )
 
-    def sync_info(self, msg, *args, **kwargs):
+    def sync_info(self, msg, exc_info=False, *args, **kwargs):
         self._log(
             logging.INFO,
             msg,
             args,
-            exc_info=None,
+            exc_info=exc_info,
             extra=None,
             stack_info=False,
             stacklevel=2,
@@ -119,7 +119,7 @@ class CustomColorLogger(logging.Logger):
         )
 
     async def warning(
-        self, msg, state: FSMContext = None, chat_id: int = None, *args, **kwargs
+        self, msg, state: FSMContext = None, chat_id: int = None, exc_info=False, *args, **kwargs
     ):
         if self.forward_messages_to_tg_users:
             await self.__send_msg_to_user__(msg=msg, state=state, chat_id=chat_id)
@@ -127,19 +127,19 @@ class CustomColorLogger(logging.Logger):
             logging.WARNING,
             msg,
             args,
-            exc_info=None,
+            exc_info=exc_info,
             extra=None,
             stack_info=False,
             stacklevel=2,
             **kwargs,
         )
 
-    def sync_warning(self, msg, *args, **kwargs):
+    def sync_warning(self, msg, exc_info=False, *args, **kwargs):
         self._log(
             logging.WARNING,
             msg,
             args,
-            exc_info=None,
+            exc_info=exc_info,
             extra=None,
             stack_info=False,
             stacklevel=2,
@@ -147,7 +147,7 @@ class CustomColorLogger(logging.Logger):
         )
 
     async def error(
-        self, msg, state: FSMContext = None, chat_id: int = None, *args, **kwargs
+        self, msg, exc_info=False, state: FSMContext = None, chat_id: int = None, *args, **kwargs
     ):
         if self.forward_messages_to_tg_users:
             await self.__send_msg_to_user__(msg=msg, state=state, chat_id=chat_id)
@@ -155,19 +155,19 @@ class CustomColorLogger(logging.Logger):
             logging.ERROR,
             msg,
             args,
-            exc_info=None,
+            exc_info=exc_info,
             extra=None,
             stack_info=False,
             stacklevel=2,
             **kwargs,
         )
 
-    def sync_error(self, msg, *args, **kwargs):
+    def sync_error(self, msg, exc_info=False, *args, **kwargs):
         self._log(
             logging.ERROR,
             msg,
             args,
-            exc_info=None,
+            exc_info=exc_info,
             extra=None,
             stack_info=False,
             stacklevel=2,
@@ -175,7 +175,7 @@ class CustomColorLogger(logging.Logger):
         )
 
     async def critical(
-        self, msg, state: FSMContext = None, chat_id: int = None, *args, **kwargs
+        self, msg, state: FSMContext = None, chat_id: int = None, exc_info=False, *args, **kwargs
     ):
         if self.forward_messages_to_tg_users:
             await self.__send_msg_to_user__(msg=msg, state=state, chat_id=chat_id)
@@ -183,19 +183,19 @@ class CustomColorLogger(logging.Logger):
             logging.CRITICAL,
             msg,
             args,
-            exc_info=None,
+            exc_info=exc_info,
             extra=None,
             stack_info=False,
             stacklevel=2,
             **kwargs,
         )
 
-    def sync_critical(self, msg, *args, **kwargs):
+    def sync_critical(self, msg, exc_info=False, *args, **kwargs):
         self._log(
             logging.CRITICAL,
             msg,
             args,
-            exc_info=None,
+            exc_info=exc_info,
             extra=None,
             stack_info=False,
             stacklevel=2,

@@ -20,14 +20,16 @@ from handlers.tg_partner_change_handlers import next_please_handler
 from handlers.tg_user_register_handlers import (
     receiving_messages_on_registration_handler,
 )
-
+import sys
 # from handlers.tg_commands import message_reaction_handler
+
+from services.dao import get_user_from_db
 
 from models.base import MessageSource
 from services.dao import save_telegram_message
 from services.score_tiers import message_tiers_count
 from utils.debug import logger
-from handlers.tg_commands import cmd_start_chatting, cmd_unregister
+from handlers.tg_commands import cmd_start_chatting, cmd_unregister, save_received_telegram_message
 
 # bot_instance = None
 
@@ -64,12 +66,7 @@ async def cmd_user_unregister(message: types.Message, state: FSMContext) -> None
 # TODO: handle start command corrtectly
 @user_router.message(Command(commands=["start"]))
 async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
-    try:
-        await save_telegram_message(
-            message=message, message_source=MessageSource.command_received
-        )
-    except SQLAlchemyError:
-        logger.sync_error("Do not try to save a message before the user is created")    
+    await save_received_telegram_message(message)    
     logger.sync_debug("'/start' command received")
     await cmd_start(message, state)
 
@@ -91,31 +88,21 @@ async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
 # The user starts a registration process
 @user_router.message(Command(commands=["register"]))
 async def cmd_user_register_start(message: types.Message, state: FSMContext) -> None:
-
-    try:
-        await save_telegram_message(
-            message=message, message_source=MessageSource.command_received)
-    except SQLAlchemyError:
-        logger.sync_error("Do not try to save a message before the user is created")        
-
+    await save_received_telegram_message(message)
     logger.sync_debug("'/register' command received")
     await cmd_register(message, state)
 
 
 @user_router.message(Command(commands=["next_please"]))
 async def cmd_next_please(message: types.Message, state: FSMContext) -> None:
-    await save_telegram_message(
-            message=message, message_source=MessageSource.command_received
-        )
+    await save_received_telegram_message(message)  
     logger.sync_debug("'/next_please' command received")
     await next_please_handler(message, state)
 
 
 @user_router.message(Command(commands=["show_my_profile"]))
 async def cmd_user_show_my_profile(message: types.Message) -> None:
-    await save_telegram_message(
-            message=message, message_source=MessageSource.command_received
-        )
+    await save_received_telegram_message(message)  
     logger.sync_debug("'/show_my_profile' command received")
     for i in range(0, message_tiers_count.MESSAGE_TIERS_COUNT):
         await send_tiered_partner_s_message_to_user(
@@ -125,10 +112,7 @@ async def cmd_user_show_my_profile(message: types.Message) -> None:
 
 @user_router.message(Command(commands=["start_chatting"]))
 async def cmd_user_start_chatting(message: types.Message, state: FSMContext) -> None:
-    await save_telegram_message(
-            message=message, message_source=MessageSource.command_received)
-    
-    logger.sync_debug("'/start_chatting' command received")
+    await save_received_telegram_message(message)  
     await cmd_start_chatting(message, state)
     # await state.set_state(UserStates.ready_to_chat)
 

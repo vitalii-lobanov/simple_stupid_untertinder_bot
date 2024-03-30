@@ -8,6 +8,7 @@ from database.engine import initialize_db
 from routers.user_router import user_router
 from utils.debug import logger
 
+
 logger.sync_debug("Bot token: {}".format(BOT_TOKEN))
 logger.sync_debug("Redis URL: {}".format(REDIS_URL))
 
@@ -42,4 +43,5 @@ if __name__ == "__main__":
 # TODO: client.py from redis_helper_utils -> utils
 # TODO: check session.close() for all the open sessions
 # TODO: types for functions and arguments
-# TODO: edit command descriptions via BotFather
+# TODO: edit command descriptions via BotFather/sta
+# TODO: states chaeching in user_router before command handling

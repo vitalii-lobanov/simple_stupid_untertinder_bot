@@ -125,3 +125,6 @@ def message_you_have_already_been_registered():
 
 def message_your_profile_message_saved_and_profile_successfully_filled_up():
     return "Your profile message saved and profile successfully filled up. You can use /show_my_profile command to view the messages in your profile."
+
+def message_you_reacted_messge_from_another_conversation():
+    return "You reacted message from another conversation. Please do not react messagef from the other conversations."

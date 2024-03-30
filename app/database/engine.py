@@ -91,21 +91,26 @@ async def get_session():
         try:
             yield session
             await session.commit()
-        except Exception:
+        except Exception as e:
+            await logger.sync_error(f"Failed to commit session, exception: {e}", exc_info=True)
             await session.rollback()
+            
             raise
         finally:
             await session.close()
 
 
 def manage_db_session(func):
-    @wraps(func)
-    async def wrapper(*args, **kwargs):
-        session_provided = 'session' in kwargs
-        if not session_provided:
-            async with get_session() as new_session:
-                kwargs['session'] = new_session
+    try:
+        @wraps(func)    
+        async def wrapper(*args, **kwargs):
+            session_provided = 'session' in kwargs
+            if (not session_provided) or (kwargs['session'] is None):
+                async with get_session() as new_session:
+                    kwargs['session'] = new_session
+                    return await func(*args, **kwargs)
+            else:
                 return await func(*args, **kwargs)
-        else:
-            return await func(*args, **kwargs)
+    except Exception as e:
+        logger.sync_error(f"Failed to create tables: {e}", exc_info=True)        
     return wrapper

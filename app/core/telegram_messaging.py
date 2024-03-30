@@ -126,7 +126,7 @@ async def send_tiered_partner_s_message_to_user(
         current_partner_profile_version = await get_max_profile_version_of_user_from_db(
             user_id=partner_id
         )
-
+        #TODO: WTF? How id related to current_partner_profile_version???
         if current_partner_profile_version == 0:
             id = user_id            
         else:
@@ -137,10 +137,11 @@ async def send_tiered_partner_s_message_to_user(
             session=session,
             user_id=id,
             tier=tier,
-            profile_version=profile_version,
+            profile_version=profile_version,            
         )
+
         await send_reconstructed_telegram_message_to_user(
-            message=tiered_message, user_id=user_id
+            message=tiered_message, user_id=partner_id
         )
     except Exception as e:
         logger.sync_error(msg=f"Error sending tiered profile message: {e}")

@@ -43,6 +43,7 @@ from utils.text_messages import (
     message_you_have_reached_the_next_tier,
     message_you_now_connected_to_the_conversation_partner,
     message_you_should_not_react_your_own_messages,
+    message_you_reacted_messge_from_another_conversation,
 )
 
 
@@ -88,7 +89,7 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
                 user_id=user_id,
                 user_profile_version=user_profile_version,
                 partner_id=partner.id,
-                patner_profile_version=partner_profile_version,
+                partner_profile_version=partner_profile_version,
             )
             if conversation is None:
                 await logger.error(
@@ -138,10 +139,10 @@ async def state_user_is_in_chatting_progress_handler(message: types.Message, sta
     user_id = message.from_user.id
     if not await check_user_state(user_id=user_id, state=UserStates.chatting_in_progress):
         return
-    with get_session() as session:    
-        conversation = await get_currently_active_conversation_for_user_from_db(user_id=user_id) 
-        if conversation.id is not None:
-            partner_id = await get_conversation_partner_id_from_db(user_id=user_id)
+    async with get_session() as session:    
+        conversation = await get_currently_active_conversation_for_user_from_db(user_id=user_id, session=session) 
+        if conversation is not None:
+            partner_id = await get_conversation_partner_id_from_db(user_id=user_id, session=session, conversation=conversation)
             if not await check_user_state(user_id=partner_id, state=UserStates.chatting_in_progress):
                 raise Exception(f"Partner is not in state 'chatting_in_progress'. User_id: {user_id}, partner_id: {partner_id}")        
             
@@ -172,7 +173,7 @@ async def update_user_score_in_conversation(state: FSMContext, delta: float) -> 
 
 
 async def check_conversation_score_threshold(
-    current_score: int, state: FSMContext
+    current_score: int, state: FSMContext, partner_id: int
 ) -> Union[int, bool]:
     current_disclosure_level = await __get_disclosure_level__(state)
     for index, tier_threshold in enumerate(
@@ -188,14 +189,14 @@ async def check_conversation_score_threshold(
         ):
             await __set_disclosure_level__(state, reversed_index)
             await logger.debug(
-                msg=f"Your score is {current_score}. You have reached the {tier_threshold} score threshold at index {index}.",
-                state=state,
+                msg=f"Your partner reacted to your message. Your score is {current_score}. You have reached the {tier_threshold} score threshold at index {index}.",
+                chat_id=partner_id,
             )
             return reversed_index
 
     await logger.debug(
-        msg=f"Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.",
-        state=state,
+        msg=f"Your partner reacted to your message. Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.",
+        chat_id=partner_id,
     )
     return False
 
@@ -221,22 +222,28 @@ async def message_reaction_handler(
         )
 
     message_from_db = await get_message_for_given_conversation_from_db(
-        message_id=message_reaction.tg_message_id, conversation_id=conversation['conversation_id']
-    )
+        message_id=message_reaction.message_id, conversation_id=conversation.id    )
     if message_from_db is None:
         message_from_db = await get_message_in_inactive_conversations_from_db(
-            message_id=message_reaction.tg_message_id
+            message_id=message_reaction.message_id
         )
         if message_from_db is not None:
+            await send_service_message( 
+                message=message_you_reacted_messge_from_another_conversation(),
+                chat_id=user_id
+            )
             await logger.error(
                 msg="It seems the user reacted the message in an inactive conversation",
                 state=user_context,
             )
             return
-        await logger.error(
-            msg="Failed to find the message in the database", state=user_context
-        )
-        raise SQLAlchemyError("Failed to find the message in the database")
+        else:   
+            await logger.error(
+                msg="Failed to find the message in the database / message_reaction_handler",
+                state=user_context,
+            )         
+ 
+            raise SQLAlchemyError("Failed to find the message in the database")
 
     # Users should not react to their own messages
     message_sender = message_from_db.sender_in_conversation_id
@@ -285,9 +292,10 @@ async def message_reaction_handler(
         rank = ranker.get_rank(emoji) * inverse_multiplier
 
         message = await get_message_for_given_conversation_from_db(
-            message_id=message_reaction.tg_message_id, conversation_id=conversation.id
+            message_id=message_reaction.message_id, conversation_id=conversation.id
         )
-        message_id = message.id
+        message_id = message.id #TODO: if message is none — send an error 
+        tg_message_id = message.tg_message_id
 
         # Save the reaction
         # TODO: -1 logic from __get_message_sender_id_from_db__()
@@ -295,6 +303,7 @@ async def message_reaction_handler(
             user_id=message_reaction.user.id,
             # I do not know why -1 is needed
             message_id=message_id,
+            tg_message_id= tg_message_id,
             new_emoji=new_emoji,
             old_emoji=old_emoji,
             timestamp=datetime.now(),
@@ -310,7 +319,7 @@ async def message_reaction_handler(
 
             await bot_instance.set_message_reaction(
                 chat_id=partner_id,
-                message_id=message_id,
+                message_id=tg_message_id,
                 reaction=[emoji_reaction] if emoji_reaction else [],
             )
 
@@ -319,22 +328,22 @@ async def message_reaction_handler(
             )
 
             reached_tier = await check_conversation_score_threshold(
-                current_score=current_score, state=user_context
+                current_score=current_score, state=user_context, partner_id=partner_id
             )
             if reached_tier is not False:
                 logger.sync_debug(
-                    msg=f"Your score is {current_score}. You have reached the {reached_tier} score threshold."
+                    msg=f"Your partner reacted your message. Your score is {current_score}. You have reached the {reached_tier} score threshold."
                 )
                 await send_service_message(
                     message=message_you_have_reached_the_next_tier(
                         current_score=current_score, reached_tier=reached_tier
                     ),
-                    chat_id=user_id,
+                    chat_id=partner_id,
                 )
 
                 # TODO: Change all the parameters everywhere for named arguments instead of positional
                 await send_tiered_partner_s_message_to_user(
-                    bot_instance, user_id, partner_id, reached_tier
+                     user_id=user_id, partner_id=partner_id, tier=reached_tier
                 )
 
                 if (
@@ -355,8 +364,9 @@ async def message_reaction_handler(
         else:
             # TODO: here and everywhere else: clear states on exceptions!
 
-            logger.error("Failed to save the reaction to the database")
+            await logger.error("Failed to save the reaction to the database")
             raise SQLAlchemyError("Failed to save the reaction to the database")
 
     except Exception as e:
-        logger.error(f"An exception occurred while handling the message reaction: {e}")
+        await logger.error(f"An exception occurred while handling the message reaction: {e}")
+        raise e

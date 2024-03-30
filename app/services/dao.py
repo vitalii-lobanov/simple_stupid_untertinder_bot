@@ -64,7 +64,7 @@ def __link_preview_options_to_dict__(
 
 @manage_db_session
 async def save_telegram_message(
-    session: Session = None,
+    session: AsyncSession = None,
     message: types.Message = None,
     message_source: MessageSource = None,
     tier: int = -1,
@@ -145,7 +145,7 @@ async def save_telegram_message(
         #session.commit()
     except Exception as e:
         #session.rollback()
-        await logger.error(msg=f"Failed to save message: {e}", chat_id=user_id)
+        await logger.sync_error(msg=f"Failed to save message: {e}")
     # finally:
     #     #session.close()
     
@@ -187,7 +187,7 @@ async def save_telegram_reaction(
     new_emoji: str,
     old_emoji: Optional[str] = None,
     timestamp: Optional[datetime] = None,
-    receiver_message_id: Optional[int] = None,
+    tg_message_id: int = -1,
     message_id: int = None,
     rank: int = 0,
     session: AsyncSession = None,
@@ -198,30 +198,29 @@ async def save_telegram_reaction(
         reaction = Reaction(
             user_id=user_id,
             message_id=message_id,
+            tg_message_id = tg_message_id,
             new_emoji=new_emoji,
             old_emoji=old_emoji,
             timestamp=timestamp,
-            receiver_message_id=receiver_message_id,
+            #receiver_message_id=receiver_message_id,
             rank=rank,
         )
 
         # Add the new reaction to the session and commit
-        session.add(reaction)
-        #session.commit()
-        logger.sync_debug(f"Reaction saved: {reaction.id}")
+        session.add(reaction)   
+        logger.sync_debug("Reaction saved.")
         return True
 
     except SQLAlchemyError as e:
         # Handle any database errors
         await logger.error(
-            msg=f"SQLAlchemy error saving reaction: {e}", chat_id=user_id
+            msg=f"SQLAlchemy error saving reaction: {e}", chat_id=user_id, exc_info=True
         )
         #session.rollback()
         raise
     except Exception as e:
         # Handle any other exceptions
-        await logger.error(msg=f"Error saving reaction: {e}", chat_id=user_id)
-        #session.rollback()
+        await logger.error(msg=f"Error saving reaction: {e}", chat_id=user_id, exc_info=True)        
         raise e
 
 
@@ -235,20 +234,33 @@ async def get_message_for_given_conversation_from_db(
         result = await session.execute(
             select(Message)
             .join(Conversation, Message.conversation_id == Conversation.id)
-            .filter(Message.id == message_id, Conversation.id == conversation_id)
+            .filter(Message.tg_message_id == message_id, Conversation.id == conversation_id)
         )
         message = result.scalars().first()
-        return message
+
+        #Handle Telegram message numering, dirty hack
+        message_id = message_id - 1
+        if message is None:
+            result = await session.execute(
+            select(Message)
+            .join(Conversation, Message.conversation_id == Conversation.id)
+            .filter(Message.tg_message_id == message_id, Conversation.id == conversation_id)
+        )
+        message = result.scalars().first()
+
+        if message:
+            return message
+        else:
+            raise ValueError(f"No message found with ID {message_id} and conversation ID {conversation_id}")
     except Exception as e:
-        await logger.error(msg=f"Failed to retrieve message: {e}", chat_id=None)  # Replace None with actual chat_id if available
+        await logger.error(msg=f"Failed to retrieve message: {e}", chat_id=None)  # TODO: Replace None with actual chat_id if available
         raise e
 
 @manage_db_session
 async def get_currently_active_conversation_for_user_from_db(
     user_id: int,
     session: AsyncSession = None
-) -> Conversation | None:
-    
+) -> Conversation | None:    
 
     try:
         result = await session.execute(
@@ -264,6 +276,13 @@ async def get_currently_active_conversation_for_user_from_db(
         await logger.error(
             msg=f"SQLAlchemy error getting currently active conversation: {e}",
             user_id=user_id,
+        )
+        conversation = None
+
+    except Exception as e:        
+        await logger.error(
+            msg=f"Error getting currently active conversation for user_id {user_id}: {e}",
+            chat_id=user_id,
         )
         conversation = None
     # finally:
@@ -286,19 +305,22 @@ async def get_message_in_inactive_conversations_from_db(message_id: int, session
 
 
 # TODO: naming: get, set, check
-async def get_conversation_partner_id_from_db(user_id: int = 0, session: AsyncSession = None) -> int:
-    conversation = await get_currently_active_conversation_for_user_from_db(
-        user_id=user_id, session=session
-    )
-    if not conversation:
-        return None
-    partner_id = (
-        conversation['user2_id']
-        if conversation['user1_id'] == user_id
-        else conversation['user2_id']
-    )
-    return partner_id
+async def get_conversation_partner_id_from_db(user_id: int = 0, conversation: Optional[Conversation] = None, session: AsyncSession = None) -> int:
 
+    if not conversation:
+        conversation = await get_currently_active_conversation_for_user_from_db(
+            user_id=user_id, session=session
+        )
+        if not conversation:
+            return None
+        
+    if conversation.user1_id == user_id:
+        return conversation.user2_id
+    elif conversation.user2_id == user_id:
+        return conversation.user1_id
+    else:
+        return None
+    
 
 @manage_db_session
 async def is_conversation_active(conversation_id: int, session: AsyncSession = None) -> bool:
