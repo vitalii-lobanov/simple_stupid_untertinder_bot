@@ -29,6 +29,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 
 # TODO: look TODO's
+# Check -1 tier on saved messages and /show_my_profile's messages
 # Try Trunk Check extension instead of ruff
 # TODO: -> and argument types for functions
 # TODO: looak at all the .get_state() and change them to check_user_state() from core.states
@@ -45,3 +46,7 @@ if __name__ == "__main__":
 # TODO: types for functions and arguments
 # TODO: edit command descriptions via BotFather/sta
 # TODO: states chaeching in user_router before command handling
+# TODO: test: condition — not registered user sends a message. 
+# TODO: json / list serializers from dao.py to helpers module
+# TODO: handle forwarded messages in registration process
+# TODO: handle forwarded messages in conversations

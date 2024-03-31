@@ -1,3 +1,4 @@
+import json
 import os
 import random
 from datetime import datetime
@@ -12,67 +13,19 @@ from models.base import MessageSource
 from models.message import Message
 from models.reaction import Reaction
 from models.user import User
+from services.serializing_helpers import (
+    get_multimedia_paths_from_message,
+    link_preview_options_to_dict,
+    location_to_dict,
+    message_entities_to_dict,
+    message_poll_to_dict, 
+)
 from services.tg_helpers import download_telegram_file, get_telegram_file
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import Session, aliased
 from utils.debug import logger
-import json
-
-def __message_entities_to_dict__(
-    entities: List[types.MessageEntity],
-) -> Optional[List[Dict[str, Union[str, int, Optional[Dict[str, Any]]]]]]:
-    return (
-        [
-            {
-                "type": entity.type,
-                "offset": entity.offset,
-                "length": entity.length,
-                "url": entity.url,
-                "user": entity.user.to_dict() if entity.user else None,
-                "language": entity.language,
-            }
-            for entity in entities
-        ]
-        if entities
-        else None
-    )
-
-
-def __link_preview_options_to_dict__(
-    link_preview_options: Optional[types.LinkPreviewOptions],
-) -> Optional[Dict[str, Union[bool, str, None]]]:
-    if link_preview_options is not None:
-        is_disabled = (
-            link_preview_options.is_disabled
-            if isinstance(link_preview_options.is_disabled, bool)
-            else False
-        )
-        return {
-            "is_disabled": is_disabled,
-            "url": link_preview_options.url
-            if isinstance(link_preview_options.url, str)
-            else None,
-        }
-    return None
-
-
-# TODO: handle other media types. Especially message_source (enum from base(?))
-
-
-def __get_multimedia_paths_from_message__(message: types.Message) -> dict:
-    return {
-        "audio": message.audio.file_id if message.audio else None,
-        "document": message.document.file_id if message.document else None,
-        "photo": message.photo[-1].file_id if message.photo else None,
-        "sticker": message.sticker.file_id if message.sticker else None,
-        "video": message.video.file_id if message.video else None,
-        "voice": message.voice.file_id if message.voice else None,
-        "video_note": message.video_note.file_id if message.video_note else None,
-        "animation": message.animation.file_id if message.animation else None,
-    }
 
 
 @manage_db_session
@@ -96,7 +49,7 @@ async def save_telegram_message(
     from_user_data = vars(message.from_user)
     from_user_json = json.dumps(from_user_data)
 
-    multimedia_list = __get_multimedia_paths_from_message__(message)
+    multimedia_list = get_multimedia_paths_from_message(message)
     for key, value in multimedia_list.items():
         if value is not None:
             try:
@@ -134,10 +87,10 @@ async def save_telegram_message(
             caption=message.caption if message.caption else None,
             # caption_entities=message.caption_entities if message.caption_entities else None,
             # entities=message.entities if message.entities else None,
-            caption_entities=__message_entities_to_dict__(message.caption_entities)
+            caption_entities=message_entities_to_dict(message.caption_entities)
             if message.caption_entities
             else None,
-            entities=__message_entities_to_dict__(message.entities)
+            entities=message_entities_to_dict(message.entities)
             if message.entities
             else None,
             contact=message.contact if message.contact else None,
@@ -147,8 +100,8 @@ async def save_telegram_message(
             dice=message.dice if message.dice else None,
             html_text=message.html_text if message.html_text else None,
             invoice=message.invoice if message.invoice else None,
-            location=message.location if message.location else None,
-            link_preview_options=__link_preview_options_to_dict__(
+            location=location_to_dict(message.location) if message.location else None,
+            link_preview_options=link_preview_options_to_dict(
                 message.link_preview_options
             )
             if message.link_preview_options
@@ -161,7 +114,7 @@ async def save_telegram_message(
             original_sender_username=message.forward_from.username
             if message.forward_from
             else None,
-            poll=message.poll if message.poll else None,
+            poll= message_poll_to_dict(message.poll) if message.poll else None,
             quote=message.quote if message.quote else None,
             story=message.story if message.story else None,
             sender_in_conversation_id=message.from_user.id if message.from_user else None,
@@ -183,7 +136,9 @@ async def save_tiered_registration_message(
     message_count: int,
     profile_version: int,
 ) -> bool:
-    tier = message_count - 1
+    
+    #tier = message_count - 1
+    tier = message_count
     message_source = MessageSource.registration_profile
 
     user_id = message.from_user.id

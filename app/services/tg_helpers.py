@@ -11,7 +11,8 @@ from utils.debug import logger
 async def get_telegram_file(file_id: str) -> File:
     try:
         file = await bot_instance.get_file(file_id)
-        return File(path=file.file_path)
+        #return File(path=file.file_path)
+        return file
     except TelegramBadRequest as e:
         logger.sync_error(msg=f"Error getting file, BAD REQUEST: {e}")
         raise e    

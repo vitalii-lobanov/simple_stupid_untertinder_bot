@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 import asyncpg
 import aioredis
 from config import REDIS_URL
+from config import DOWNLOAD_PATH
+import os, shutil
 
 async def async_database_exists(engine: AsyncEngine, db_name: str) -> bool:
     async with engine.connect() as conn:
@@ -87,8 +89,18 @@ async def recreate_database(uri: str):
     await flush_all_redis_data()
     print ("Redis data cleared successfully")
 
-
+def remove_downloads():
+    for filename in os.listdir(DOWNLOAD_PATH):
+        file_path = os.path.join(DOWNLOAD_PATH, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
 if __name__ == "__main__":
     asyncio.run(recreate_database(DATABASE_URI))
+    remove_downloads()

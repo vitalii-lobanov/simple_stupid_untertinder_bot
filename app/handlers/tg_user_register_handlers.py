@@ -58,10 +58,13 @@ async def registration_failed(
         msg=f"{message_registration_failed()} Exception: {str(exception)}", state=state
     )
 
-
-async def increment_message_count(message: types.Message, state: FSMContext) -> int:
+async def __get_registration_message_count_already_sent__(message: types.Message, state: FSMContext) -> int:
     user_data = await state.get_data()
-    message_count = user_data.get("message_count", 0) + 1
+    message_count = user_data.get("message_count", 0)
+    return message_count
+
+async def increment_message_count(message: types.Message, state: FSMContext) -> int:    
+    message_count = await __get_registration_message_count_already_sent__(message, state) + 1
     await state.update_data(message_count=message_count)
     return message_count
 
@@ -124,13 +127,15 @@ async def receiving_messages_on_registration_handler(
         user_profile_version = await get_max_profile_version_of_user_from_db(
             user_id=message.from_user.id
         )
-        message_count = await increment_message_count(message, state)
+        
+        message_count = await __get_registration_message_count_already_sent__(message, state)
         if not await save_tiered_registration_message(message=message, message_count=message_count, profile_version = user_profile_version):
             await send_service_message(
                 message=message_your_message_is_bad_and_was_not_saved(),
                 chat_id=message.from_user.id,
             )
         else:    
+            message_count = await increment_message_count(message, state)
             await check_message_threshold(message, state, message_count)
     else:
         await logger.error(

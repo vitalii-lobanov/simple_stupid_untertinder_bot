@@ -28,9 +28,6 @@ async def send_reconstructed_telegram_message_to_user(
 
 
     if message is not None:
-        # if not session.contains(message):
-        #     session.add(message)
-        # session.refresh(message)
 
         if message.original_sender_id is not None:
             message_text = message_this_message_is_forwarded(
