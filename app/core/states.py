@@ -60,3 +60,17 @@ async def check_user_state(user_id:int = -1, state: Union[RegistrationStates, Us
         return True
     else:
         return False
+    
+async def is_current_state_legitimate(user_id: int, state: FSMContext, allowed_states: list[Union[RegistrationStates, UserStates, CommonStates]]) -> bool:
+    for state in allowed_states:
+        if state is None:
+            return True
+        if await check_user_state(user_id=user_id, state=state):
+            return True
+    return False
+
+async def is_current_state_is_not_allowed(user_id: int, state: FSMContext, not_allowed_states: list[Union[RegistrationStates, UserStates, CommonStates]]) -> bool:
+    for state in not_allowed_states:
+        if await check_user_state(user_id=user_id, state=state):
+            return True
+    return False

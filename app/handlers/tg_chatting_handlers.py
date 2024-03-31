@@ -194,10 +194,10 @@ async def check_conversation_score_threshold(
             )
             return reversed_index
 
-    await logger.debug(
-        msg=f"Your partner reacted to your message. Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.",
-        chat_id=partner_id,
-    )
+    # await logger.debug(
+    #     msg=f"Your partner reacted to your message. Your score is {current_score}. You have not reached the {tier_threshold} score threshold at index {index}.",
+    #     chat_id=partner_id,
+    # )
     return False
 
 
@@ -331,9 +331,9 @@ async def message_reaction_handler(
                 current_score=current_score, state=user_context, partner_id=partner_id
             )
             if reached_tier is not False:
-                logger.sync_debug(
-                    msg=f"Your partner reacted your message. Your score is {current_score}. You have reached the {reached_tier} score threshold."
-                )
+                # logger.sync_debug(
+                #     msg=f"Your partner reacted your message. Your score is {current_score}. You have reached the {reached_tier} score threshold."
+                # )
                 await send_service_message(
                     message=message_you_have_reached_the_next_tier(
                         current_score=current_score, reached_tier=reached_tier
@@ -353,9 +353,9 @@ async def message_reaction_handler(
                     )
                     - 1
                 ):
-                    await logger.sync_debug(
-                        msg=f"Your score is {current_score}. You have reached the last score threshold."
-                    )
+                    # await logger.sync_debug(
+                    #     msg=f"Your score is {current_score}. You have reached the last score threshold."
+                    # )
 
                     await send_service_message(
                         message=message_the_last_tier_reached(), chat_id=user_id

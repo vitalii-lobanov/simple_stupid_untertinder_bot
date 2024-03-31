@@ -26,12 +26,15 @@ from utils.text_messages import (
     message_you_have_been_registered_successfully,
     message_you_now_ready_to_chat_please_wait_the_partner_to_connect,
     message_you_have_already_been_registered,
+    message_help_message
 )
 from core.states import RegistrationStates
 from services.dao import save_telegram_message
 
 from utils.debug import logger
 from models.message import MessageSource
+
+from services.score_tiers import message_tiers_count
 
 # TODO: all the cmd_ functions from handlers should be here
 
@@ -55,6 +58,14 @@ async def cmd_start(message: types.Message, state: FSMContext) -> None:
     await state.set_state(CommonStates.default)
     await send_service_message(
         message=message_cmd_start_welcome_message(), chat_id=message.from_user.id
+    )
+    await send_service_message(
+        message=message_cmd_start_welcome_message(),
+        chat_id=message.from_user.id,
+    )
+    await send_service_message(
+        message=message_help_message(),
+        chat_id=message.from_user.id,
     )
 
 
@@ -135,8 +146,8 @@ async def cmd_register(message: types.Message, state: FSMContext) -> None:
         await state.set_state(RegistrationStates.starting)
         await ask_user_to_send_messages_to_fill_profile(message, state)
     else:
-        await logger.error(msg="User {} is already registered, but the users profile is active, so cmd_register failed", chat_id=user_id)
-        raise ValueError(f"User {user_id} is already registered, but the users profile is active, so cmd_register failed")
+        await logger.error(msg="Registration failed, try /unregister", chat_id=user_id)
+        raise ValueError(f"Inconsistency in registration. User id: {user_id}")
         
     # elif user.is_active and profile_messages_count == message_tiers_count.MESSAGE_TIERS_COUNT:
     #     #profile_message_count requires versioning to work
@@ -177,3 +188,5 @@ async def cmd_start_chatting(message: types.Message, state: FSMContext) -> None:
 async def default_handler(message: types.Message, state: FSMContext) -> None:
     pass
 
+async def cmd_help(message: types.Message, state: FSMContext, total_message_count: int = message_tiers_count.MESSAGE_TIERS_COUNT) -> None:
+    await send_service_message(message=message_help_message(total_messages_count=total_message_count), chat_id=message.from_user.id)

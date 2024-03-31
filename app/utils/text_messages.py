@@ -1,12 +1,13 @@
 # TODO: wrap all the user messages as functions
+from services.score_tiers import message_tiers_count
 
 
 def message_you_now_connected_to_the_conversation_partner() -> str:
-    return "You are now connected with a chat partner!"
+    return "Вот и для вас кто-то нашёлся! Мы же обещали :) Где-то здесь экипаж в лице бота прощается с вами и желает приятного общения!\n\nИ помните: у вас всегда есть возможность использовать команду '/next_please', если собеседник вам совсем уж не понравился. Вот только далеко не факт, что следующий будет лучше."
 
 
 def message_a_conversation_partner_found() -> str:
-    return "Someone became your chat partner!"
+    return "Мы смоги найти вам собеседника! Нельзя сказать, что с такой обширной (сарказм) пользовательской базой это было легко, но мы смогли, мы крутые! Но если всё же нет, и мы сильно облажались, используйте '/next_please' и да помогут вам небеса найти кого-то более лучшего!"
 
 
 def message_this_is_bot_message() -> str:
@@ -14,27 +15,27 @@ def message_this_is_bot_message() -> str:
 
 
 def message_the_last_tier_reached() -> str:
-    return "You have reached the last score threshold. You can continue chat with the current partner or use /next_please command to try again."
+    return "Ну, вот и всё: теперь вы видели весь профиль своего собеседника. На этом механика — всё. Вы можете продолжить общение безо всяких там механик и сценариев, а можете использовать '/next_please', чтобы попытаться найти ещё кого-то."
 
 
 def message_you_are_not_in_chatting_state() -> str:
-    return "You are not currently in a conversation. You can use '/start_chatting' to start one."
+    return "Беседа у вас даже не началась, а вы ужé... Используйте '/start_chatting', возможно, вам повезёт, и кто-то да пообщается с вами."
 
 
 def message_you_send_end_command_and_your_partner_has_sent_it_earlier() -> str:
-    return "You sent '/next_please' command. Your partner has sent it earlier. Conversation ended."
+    return "Ну, вот вы отправили своё 'Следующего, пожалуйста', ага. Но фишка в том, что ваш собеседник сделал это ещё раньше. Задумайтесь о том, как это характеризует вас обоих. А бот пока завершит вашу беседу. Можете попытаться начать новую, используйте '/start_chatting'."
 
 
 def message_you_sent_end_command_earlier_and_your_just_sent_it_now() -> str:
-    return "You sent '/next_please' command earlier. Your partner just sent it now. Conversation ended."
+    return "Возможно, вы уже устали ждать, пока этот разговор завершится (иначе зачем бы вы отправляли '/next_please'?). Но собеседник ваш тоже, вероятно, не в восторге от него, поэтому он и выразил желание прекратить всё это. Ну, и раз обе стороны хотят этого, мне ничего не остаётся, кроме как прекратить этот разговор для вас обоих. Может быть, в следующий раз, когда вы будете использовать '/start_chatting', вам повезёт больше."
 
 
 def message_you_sent_end_command_earlier_and_timer_expired() -> str:
-    return "You sent '/next_please' command earlier. The timer expired. Conversation ended."
+    return "Ваше терпение вознаграждено: вы просили сменить собеседника, вот только у второй стороны, кажется, были свои взгляды на это. Но муение не должно длиться вечно, можете попробовать пообщаться ещё с кем-нибудь ('/start_chatting' вам в помощь)."
 
 
 def message_your_partner_sent_end_command_earlier_and_timer_expired() -> str:
-    return "Your partner sent '/next_please' command earlier. The timer expired. Conversation ended."
+    return "Ваш собеседник уже давно выразил желание прекратить всё это. Но мы дали вам шанс одуматься и исправить своё поведение. Что ж, вы им не воспользовались (ещё бы, команда отмены заявки на прекращение беседы ешё не реализована!). Что ж, пора прекратить его страдания и завершить беседу. Можете попробовать пообщаться ещё с кем-нибудь ('/start_chatting' всё ещё работает, вот только не факт, что будут другие желающие кроме вас)."
 
 
 def message_this_message_is_forwarded(
@@ -48,11 +49,11 @@ def message_this_message_is_forwarded(
 
 
 def message_user_has_been_unregistered() -> str:
-    return "You have been unregistered. Your profile is present in database. You can use '/register' command to start again."
+    return "Вы отменили свою регистрацию. А мы в лучших традициях забьём на вашу приватность и не станем удалять профиль из базы (она у нас резиновая, да). Но вы можете снова использовать '/register', чтобы попытать счатья в нашем прекрасном сервисе."
 
 
 def message_cannot_unregister_not_registered_user() -> str:
-    return "You cannot unregister not registered user. You can use '/register' command to start again."
+    return "То, что не зарегистрировано, разрегистрироваться не может! Используйте сначала '/register'."
 
 
 def message_user_has_already_been_hardly_unregistered() -> str:
@@ -64,34 +65,32 @@ def message_reactivation_user_profile_completed() -> str:
 
 
 def message_non_registered_users_cannot_start_chatting() -> str:
-    return "Non-registered users cannot start chatting. You can use '/register' command to start again."
+    return "Не-не-не, так не получится! Хитрó придумано, конечно, но не делиться своими данными, просто проигнориовав процедуру регистрации, — не получится. Запустите наконец команду '/register', админам очень хочется почитать вашу переписку!"
 
 
 def message_you_now_ready_to_chat_please_wait_the_partner_to_connect() -> str:
-    return "You are now ready to chat. Please wait for your partner to connect."
+    return "Ваша заявка 'на поговорить' принята. Осталось только дождаться кого-нибудь ещё из желающих. К сожалению, ускорить этот процесс никак нельзя." 
 
 
 # def message_you_are_not_in_default_state_and_cannot_renew_profile():
 #     return "You are not in default state. Stop all the conversations and other activities and use '/renew_profile' command to start again."
 
 
-def message_you_cannot_unregister_now() -> str:
-    return "You cannot unregister now. Finish all the conversations and other activities and use '/register' command to start again."
 
 
 def message_you_have_been_registered_successfully() -> str:
-    return "You have been registered successfully. Now please fill up the profile if needed."
+    return "Регистрация прошла успешно. А теперь — заполняйте профиль!"
 
 
 def message_now_please_send_profile_messages(messages_count: int = -1) -> str:
     if messages_count == -1:
         raise ValueError("messages_count cannot be -1.")
     else:
-        return f"Please send {messages_count} profile messages."
+        return f"Отправьте ещё {messages_count} сообщений, пожалуйста."
 
 
 def message_cmd_start_welcome_message() -> str:
-    return "Welcome! Use /register to sign up and /start_chatting to begin chatting with someone."
+    return "Добро пожаловать в наш недотиндер. Сочувствуем вам в аспекте того, до чего пришлось докатиться, но что поделать. Давайте хоть справку вам напечатаем в утешение...\n\nА вообще — жмите '/register' и начинайте.\n\nБОТ ООООООЧЕНЬ СЫРОЙ И ГЛЮЧНЫЙ! В случае непоняток пишите автору в Телегу: @ya_schizotypic. Не факт, что поможет, но мало ли. И, пожалуйста, по возможности прикладывайте скриншоты того, что там у вас происходит."
 
 
 def message_registration_failed() -> str:
@@ -104,37 +103,85 @@ def message_profile_message_received_please_send_the_remaining(
     if message_count == -1 or total_messages_count == -1:
         raise ValueError("message_count and total_messages_count cannot be -1.")
     else:
-        return f"Message {message_count} received. {total_messages_count - message_count} messages left."
+        return f"Получено {message_count} сообщений. Осталось ещё {total_messages_count - message_count}."
 
 
 def message_no_partners_ready_to_chat_available_we_will_inform_you_later() -> str:
-    return "No partners are ready to chat. We will inform you later."
+    return "Здесь — как в реальной жизни: нет никого, кто был бы готов к общению. Ждите и обрящете. Мы вам перезвоним. Ну, т.е. сообщение отправим, когда (и если!) кто-то появится на горизонте."
 
 
 def message_you_should_not_react_your_own_messages() -> str:
-    return "You should not react your own messages."
+    return "Вы пытаетесь лайкнуть своё собственное сообщение. Не надо так."
 
 
 def message_you_have_reached_the_next_tier(
     current_score: int = 0, reached_tier: int = 0
 ) -> str:
-    return f"Your score is {current_score}. You have reached the {reached_tier} score threshold."
+    return f"Ну что ж, вы набрали {current_score} баллов. Теперь вам открывается новый уровень доступа к профилю вашего собеседника, используйте разумно эту возможность (№ {reached_tier})."
 
 
 def message_you_are_not_in_default_state_and_cannot_register() -> str:
-    return "You are not in default state. Stop all the conversations and other activities and use '/register' command to try again."
+    return "Вероятно, вы находитесь в процессе беседы или ещё какого-то действия. Доделайте всё, что пытаетесь сделать, завершите свои дела, пообщайтесь с близкими, раздайте долни и нажмите '/register', чтобы попробовать зарегистрироваться. Но здесь бот почти не дописан, весьма вероятно, что у вас ничего не получится."
 
 def message_you_have_already_been_registered():
-    return "You have already been registered. Your profile was reactivated."
+    return "О! А вы у нас уже когда-то были! А мы заботливо хранили ваш профиль, его и будем использовать."
 
 def message_your_profile_message_saved_and_profile_successfully_filled_up():
-    return "Your profile message saved and profile successfully filled up. You can use /show_my_profile command to view the messages in your profile."
+    return "Ага, спасибо за то, что не послали нафиг и действительно заполнили профиль. Мы правда рады. Кстати, вы можете в любой момент посмотреть, что там у вас хранится, используя команду '/show_my_profile'. А вообще — запускайте '/start_chatting', и да поможет вам Великий Рандом в выборе собеседника!"
 
 def message_you_reacted_messge_from_another_conversation():
-    return "You reacted message from another conversation. Please do not react messagef from the other conversations."
+    return "Что-то вы такое странное сейчас лайкнули... Возможно, сообщение из какой-то прошлой беседы, не знаю. В любом случае, я просто бот, и замысел ваш мне непонятен, игнорирую."
 
 def message_file_is_too_large_use_files_less_20_MB():
-    return "File is too large. Please use files less than 20 MB."
+    return "А ещё бóльших файлов у вас не было, да?! В Телеге нас, ботов, ущемляют, больше 20 MB пересылать нельзя."
 
 def message_your_message_is_bad_and_was_not_saved():
-    return "Your message is bad and was not saved. Please try again. If you send file, please use files less than 20 MB."
+    return "Я даже не смог понять, что вы там такое отправили! И не могу ничего подсказать по поводу того, что теперь делать. Если это был файл, то проследите, чтобы он было меньше 20 MB."
+
+def message_you_cannot_unregister_now():
+    return "Удалить регистрацию возможно только тогда, когда вы не находитесь в процессе заполнения профиля, общения с собеседником или инициации прекращения беседы. Пожалуйста, доделайте то, что собирались сделать, и уже тогда снова используйте '/unregister', чтобы удалить свой профиль."
+
+def message_you_should_not_run_start_command_when_not_starting():
+    return "Команда /start используется для первоначального запуска бота, не используйте её для других целей, это попросту бессмысленно."
+
+def message_you_cannot_register_now_please_unregister():
+    return "Вы не можете зарегистрироваться сейчас, простите. Возможно, если вы используете команду '/unregister', у вас получится. Но никак не ранее этого."
+
+def message_you_cannot_run_next_please_now():
+    return "Ну что вы кричите?! Следующего вам, пожалуйста вам. Оно, конечно, да, но чтобы требовать следующего, нужно, чтобы сейчас был хоть кто-то. А его нет. Так что довольствуйтесь этим сообщением: дефицит у нас с ними, следующими."
+
+def message_you_cannot_use_show_my_profile_now():
+    return "Вы не можете использовать команду '/show_my_profile'. Тут есть два варианта. В первом — автор бота сильно лоханулся, и это баг. Во втором — у вас ещё (или уже́) нет профиля. Попробуйте команды '/start' '/register' и '/unregister' в разных комбинациях."
+
+def message_you_cannot_start_chatting_now():
+    return "Вы не можете начать беседу сейчас. Возможно для начала вам нужно завершить предыдущую. Или, например, завершить процесс регистрации. Или что-то в этом духе."
+
+def message_help_message(total_messages_count: int = message_tiers_count.MESSAGE_TIERS_COUNT):
+    return f"""Напомню, а совсем зелёным новичкам сообщу, что вы попали в 'Недотиндер'! Не знаю, что вас могло довести до такого решения, да и не моё это дело. Затея, в некотором роде, конечно, сомнительная, но давайте попробую рассказать, как тут всё устроено.
+
+Суть такова: для начала требуется зарегистрироваться. Затем — прислать {total_messages_count} сообщений для заполнения профиля, после чего сообщить о готовности начать беседу. Если окажется, что кто-то ещё захочет поговорить, бот организует переписку между вами: все сообщения, которые вы отправите боту до конца беседы будут пересылаться вашему визави (и наоборот). 
+
+Если какие-то сообщения собеседника вам покажутся интересными, отмечайте их реакциями: лайками, дизлайками и прочими реакциями. Фишка в том, что в системе у вашего собеседника есть некий рейтинг, и чем он выше, тем больше содержимого вашего профиля будет ему показано. 
+
+Ещё раз: в процессе регистрации вы должны будете прислать боту {total_messages_count} сообщений. Там может быть текст, аудио, голосовушки, стикеры, ссылки, гифки / стикеры, опросы, геолокации — что угодно. А потом эти сообщения будут показываться вашему собеседнику, если вы достаточно сильно залайкаете то, что он пришлёт вам. Ну, или не будут, если не.
+
+То есть если кто-то вам понравился настолько, что вы готовы сообщить дополнительные данные о себе, бот заметит это по количеству и составу реакций, и каждый раз, когда собеседник будет набирать значимое количество баллов, ему будет показано следующее сообщение из вашего профиля (именно для этого и надо отправлять {total_messages_count} сообщений при регистрации).
+
+И да, положительные реакции увеличивают рейтинг собеседника, а отрицательные — снижают. Т.е. если вы поняли, что какой-то он не очень, ставьте дизлайки — это понизит его рейтинг, и ему придётся сделать что-то совсем уж экстраординарное, чтобы получить доступ следующего уровня. 
+
+Вот только эта система работает в обе стороны, и собеседник ваш получил точно такое же сообщение. 
+
+А теперь о командах: 
+
+/start — самая главная команда. С неё и начинайте.
+
+/register — регистрация в сервисе. Без неё просто ничего не работает. В процессе вас попросят прислать {total_messages_count} сообщений, которые будут показываться собеседнику по мере увеличения его рейтинга в беседе с вами. Сообщения будут раскрываться ровно в том порядке, в котором вы их сейчас отправите. Учитывайте это, пожалуйста.
+
+/show_my_profile — эта команда покажет вам ваш же профиль. Зачем? Ну, мало ли, вдруг вы забыли, что там у вас.
+
+/start_chatting — это для того, чтобы сообщить о готовности начать беседу. Строго говоря, название этой команды вводит в заблуждение: далеко не факт, что когда вы её запустите, беседа начнётся: придётся дождаться хотя бы одного такого же желающего поговорить.
+
+/next_please — если беседа вас разочаровывает, вы можете использовать эту команду. Когда вы её отправите, собеседник ваш об этом не узнает (но узнает позже, когда беседа уже будет завершена, и он будет вынужден сидеть с невыраженной толком бессильной злобой, му-ха-ха-ха-ха!). Сообщать ли второй стороне о том, что вы решили завершить разговор — ваше решение, мы не настаиваем ни на каком из вариантов. Важный нюанс: беседа завершается только в двух случаях: когда обе стороны использовали эту команду, либо когда запрос на 'Следующего, пожалуйста' поступил только от одной из сторон, но прошло достаточно время, чтобы бот решил, что пора бы закрывать её по таймауту.
+
+/unregister — деактивировать профиль. Зачем? Ну, редактирование ещё не реализовано, поэтому если хотите что-то изменить у себя в профиле, используйте эту команду, а затем регистрируйтесь заново.
+    """
