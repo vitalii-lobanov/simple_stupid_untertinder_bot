@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional, Union
-
+import os
 from aiogram import types
 
 
@@ -83,3 +83,8 @@ def link_preview_options_to_dict(
         }
     return None
 
+def extract_file_id_from_path(file_path: str) -> str:
+    filename = os.path.basename(file_path)      
+    file_id_parts = filename.split('_')[1:]
+    file_id = '_'.join(file_id_parts)
+    return file_id

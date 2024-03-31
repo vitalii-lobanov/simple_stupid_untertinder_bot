@@ -13,19 +13,21 @@ from utils.debug import logger
 import bleach
 from database.engine import manage_db_session
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from services.serializing_helpers import extract_file_id_from_path
 from utils.text_messages import message_this_message_is_forwarded
 from services.dao import (
     get_tiered_profile_message_from_db,
     get_max_profile_version_of_user_from_db,
 )
+from services.serializing_helpers import message_entities_to_dict
 
 
 async def send_reconstructed_telegram_message_to_user(
     message: Message = None, 
     user_id: int = -1
 ) -> None:
-
+    
+    caption = None
 
     if message is not None:
 
@@ -45,51 +47,70 @@ async def send_reconstructed_telegram_message_to_user(
         media_group = []
         if message.audio is not None:
             media_group.append(
-                types.InputMediaAudio(media=message.audio, caption=caption or None)
+                types.InputMediaAudio(media=extract_file_id_from_path(message.audio), caption=caption or None)
             )
         if message.video is not None:
             media_group.append(
-                types.InputMediaVideo(media=message.video, caption=caption or None)
+                types.InputMediaVideo(media=extract_file_id_from_path(message.video), caption=caption or None)
             )
         if message.photo is not None:
             media_group.append(
-                types.InputMediaPhoto(media=message.photo, caption=caption or None)
+                types.InputMediaPhoto(media=extract_file_id_from_path(message.photo), caption=caption or None)
             )
         if message.voice is not None:
             media_group.append(
-                types.InputMediaAudio(media=message.voice, caption=caption or None)
+                types.InputMediaAudio(media=extract_file_id_from_path(message.voice), caption=caption or None)
             )
 
         if message.animation is not None:
             media_group.append(
                 types.InputMediaVideo(
-                    media=message.animation.decode("utf-8"), caption=caption or None
+                    extract_file_id_from_path(media=message.animation), caption=caption or None
                 )
             )
         if message.video_note is not None:
             media_group.append(
-                types.InputMediaVideo(media=message.video_note, caption=caption or None)
-            )  # Assuming video_note behaves like a video
+                types.InputMediaVideo(media=extract_file_id_from_path(message.video_note), caption=caption or None)
+            ) 
 
         # Handle non-media types separately
         # These types cannot be part of a media group and should be sent as separate messages
         if message.sticker is not None:
             await bot_instance.send_sticker(user_id, sticker=message.sticker)
 
-        # TODO: test polls
+
+        if message.location is not None:
+            await bot_instance.send_location(
+                user_id,
+                latitude=message.location['latitude'],
+                longitude=message.location['longitude'],
+            )
+
         if message.poll is not None:
-            await bot_instance.send_poll(user_id, **message.poll)
+            await bot_instance.send_poll(
+                user_id,
+                question=message.poll['question'],
+                options=[option['text'] for option in message.poll['options']],
+                is_anonymous=message.poll['is_anonymous'],
+                allows_multiple_answers=message.poll['allows_multiple_answers'],
+                is_closed=message.poll['is_closed'],
+                explanation=message.poll['explanation'],
+                explanation_entities=message_entities_to_dict(message.poll['explanation_entities']),
+                open_period=message.poll['open_period'],
+                close_date=message.poll['close_date'],
+                # Add any other relevant fields required for sending a poll
+        )    
 
         # If there's a media group or other attachments, send them
         if media_group:
             await bot_instance.send_media_group(user_id, media_group)
         elif message.photo is not None:
-            await bot_instance.send_photo(user_id, photo=message.photo, caption=caption)
+            await bot_instance.send_photo(user_id, photo=extract_file_id_from_path(message.photo), caption=caption)
         elif message.video is not None:
-            await bot_instance.send_video(user_id, video=message.video, caption=caption)
+            await bot_instance.send_video(user_id, video=extract_file_id_from_path(message.video), caption=caption)
         elif message.document is not None:
             await bot_instance.send_document(
-                user_id, document=message.document, caption=caption
+                user_id, document=extract_file_id_from_path(message.document), caption=caption
             )
         # If there is only text, send it
         elif message.text is not None:            
