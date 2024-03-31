@@ -28,8 +28,7 @@ def get_multimedia_paths_from_message(message: types.Message) -> dict:
     return {
         "audio": message.audio.file_id if message.audio else None,
         "document": message.document.file_id if message.document else None,
-        "photo": message.photo[-1].file_id if message.photo else None,
-        "sticker": message.sticker.file_id if message.sticker else None,
+        "photo": message.photo[-1].file_id if message.photo else None,       
         "video": message.video.file_id if message.video else None,
         "voice": message.voice.file_id if message.voice else None,
         "video_note": message.video_note.file_id if message.video_note else None,

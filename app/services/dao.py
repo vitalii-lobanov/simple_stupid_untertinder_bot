@@ -54,7 +54,7 @@ async def save_telegram_message(
         if value is not None:
             try:
                 downloaded_file = await download_telegram_file(file_id=value)
-                if not downloaded_file:
+                if not downloaded_file:                    
                     return False
                 else:
                     multimedia_list[key] = await download_telegram_file(file_id=value)
@@ -73,8 +73,7 @@ async def save_telegram_message(
             user_profile_version=profile_version,
             text=message.text or None,
             audio=multimedia_list["audio"],
-            video = multimedia_list["video"],
-            sticker=multimedia_list["sticker"],
+            video = multimedia_list["video"],            
             voice=multimedia_list["voice"], 
             video_note=multimedia_list["video_note"],
             animation=multimedia_list["animation"],   
@@ -118,6 +117,7 @@ async def save_telegram_message(
             quote=message.quote if message.quote else None,
             story=message.story if message.story else None,
             sender_in_conversation_id=message.from_user.id if message.from_user else None,
+            sticker = message.sticker.file_id if message.sticker else None,
         )
         session.add(new_message)
         # session.commit()
