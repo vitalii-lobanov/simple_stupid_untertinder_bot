@@ -62,12 +62,6 @@ async def send_reconstructed_telegram_message_to_user(
                 types.InputMediaAudio(media=extract_file_id_from_path(message.voice), caption=caption or None)
             )
 
-        if message.animation is not None:
-            media_group.append(
-                types.InputMediaVideo(
-                    extract_file_id_from_path(media=message.animation), caption=caption or None
-                )
-            )
         if message.video_note is not None:
             media_group.append(
                 types.InputMediaVideo(media=extract_file_id_from_path(message.video_note), caption=caption or None)
@@ -78,6 +72,10 @@ async def send_reconstructed_telegram_message_to_user(
         if message.sticker is not None:
             await bot_instance.send_sticker(user_id, sticker=message.sticker)
 
+
+        # We do not need to process animationn separately, it can be handled as a document
+        # if message.animation is not None:
+        #     await bot_instance.send_animation(user_id, animation=message.animation)
 
         if message.location is not None:
             await bot_instance.send_location(

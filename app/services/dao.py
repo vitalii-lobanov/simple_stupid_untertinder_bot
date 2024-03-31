@@ -75,8 +75,7 @@ async def save_telegram_message(
             audio=multimedia_list["audio"],
             video = multimedia_list["video"],            
             voice=multimedia_list["voice"], 
-            video_note=multimedia_list["video_note"],
-            animation=multimedia_list["animation"],   
+            video_note=multimedia_list["video_note"],           
             image=multimedia_list["photo"],
             document=multimedia_list["document"],
             photo=multimedia_list["photo"],            
@@ -118,6 +117,7 @@ async def save_telegram_message(
             story=message.story if message.story else None,
             sender_in_conversation_id=message.from_user.id if message.from_user else None,
             sticker = message.sticker.file_id if message.sticker else None,
+            animation = message.animation.file_id if message.animation else None,
         )
         session.add(new_message)
         # session.commit()
