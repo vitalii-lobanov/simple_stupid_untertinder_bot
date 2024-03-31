@@ -40,7 +40,11 @@ def message_your_partner_sent_end_command_earlier_and_timer_expired() -> str:
 def message_this_message_is_forwarded(
     original_sender_username: str, message_text: str
 ) -> str:
-    return f"FORWARDED FROM @{original_sender_username}\n\n{message_text}"
+    if message_text is None:
+        msg_txt = ""
+    else:
+        msg_txt = f"\n\n{message_text}"
+    return f"FORWARDED FROM @{original_sender_username}\n\n{msg_txt}"
 
 
 def message_user_has_been_unregistered() -> str:

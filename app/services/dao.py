@@ -1,7 +1,7 @@
 import json
 import os
 import random
-from datetime import datetime
+
 from functools import wraps
 from typing import Any, Dict, List, Optional, Union
 
@@ -26,6 +26,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from utils.debug import logger
+from datetime import datetime
 
 
 @manage_db_session
@@ -62,6 +63,13 @@ async def save_telegram_message(
                 logger.sync_error(msg=f"Error downloading multimedia: {e}")
                 return False
                 #raise e
+    
+    if message.forward_date:
+        forward_date = message.forward_date
+        forward_date_naive = forward_date.replace(tzinfo=None)
+    else:
+        forward_date_naive = None
+
 
     try:
         new_message = Message(
@@ -92,7 +100,7 @@ async def save_telegram_message(
             if message.entities
             else None,
             contact=message.contact if message.contact else None,
-            forward_date=message.forward_date if message.forward_date else None,
+            forward_date=forward_date_naive if message.forward_date else None,
             from_user=from_user_json if from_user_json else None,
             game=message.game if message.game else None,
             dice=message.dice if message.dice else None,

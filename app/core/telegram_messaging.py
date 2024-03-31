@@ -32,17 +32,22 @@ async def send_reconstructed_telegram_message_to_user(
     if message is not None:
 
         if message.original_sender_id is not None:
-            message_text = message_this_message_is_forwarded(
+            caption = message_this_message_is_forwarded(
                 original_sender_username=message.original_sender_username,
                 message_text=message.text,
             )
-            if message.caption is not None:
-                caption = message_this_message_is_forwarded(
-                    original_sender_username=message.original_sender_username,
-                    message_text=message.caption + "\n\n" + message.text,
-                )
-            else:
-                caption = message.caption
+
+            #message_text = message_this_message_is_forwarded(
+            #     original_sender_username=message.original_sender_username,
+            #     message_text=message.text,
+            # )
+            # if message.caption is not None:
+            #     caption = message_this_message_is_forwarded(
+            #         original_sender_username=message.original_sender_username,
+            #         message_text=message.caption + "\n\n" + message.text,
+            #     )
+            # else:
+            #     caption = message.caption
 
         media_group = []
         if message.audio is not None:
@@ -112,8 +117,12 @@ async def send_reconstructed_telegram_message_to_user(
             )
         # If there is only text, send it
         elif message.text is not None:            
+            if caption is not None:
+                text = caption
+            else:
+                text = message.text
             await bot_instance.send_message(
-                chat_id=user_id, text=message.text, entities=message.entities
+                chat_id=user_id, text=text,  entities=message.entities
             )
 
 

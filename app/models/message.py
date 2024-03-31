@@ -42,7 +42,7 @@ class Message(Base):
     caption = Column(String)
     caption_entities = Column(JSON)
     contact = Column(JSON)
-    forward_date = Column(Integer)    
+    forward_date = Column(DateTime)    
     dice = Column(JSON)    
     entities = Column(JSON)
     game = Column(JSON)
@@ -58,7 +58,7 @@ class Message(Base):
     
     story = Column(JSON) 
 
-    original_sender_id = Column(Integer)
+    original_sender_id = Column(BIGINT)
     original_sender_username = Column(String)
     sender_in_conversation_id = Column(BIGINT)
 
