@@ -30,6 +30,7 @@ from utils.text_messages import (
 )
 from core.states import RegistrationStates
 from services.dao import save_telegram_message
+from core.states import is_current_state_legitimate, is_current_state_is_not_allowed
 
 from utils.debug import logger
 from models.message import MessageSource
@@ -55,7 +56,7 @@ async def cmd_start(message: types.Message, state: FSMContext) -> None:
     # await save_telegram_message(message=message, message_source=MessageSource.command_received)
     await state.clear()
     await state.set_data({})
-    await state.set_state(CommonStates.default)
+    await state.set_state(CommonStates.just_started_bot)
     await send_service_message(
         message=message_cmd_start_welcome_message(), chat_id=message.from_user.id
     )
@@ -63,9 +64,22 @@ async def cmd_start(message: types.Message, state: FSMContext) -> None:
 
 async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
     # await save_telegram_message(message=message, message_source=MessageSource.command_received)
-    user_state = await state.get_state()
-    if (user_state == CommonStates.default) or (user_state == UserStates.not_ready_to_chat):
-        user_id = message.from_user.id
+    user_id = message.from_user.id
+    if  not await  is_current_state_legitimate(
+        user_id=message.from_user.id,
+        state=state,
+        allowed_states=[
+            UserStates.ready_to_chat,
+            CommonStates.default,
+            RegistrationStates.completed,
+        ],
+    ):
+        await send_service_message(
+            message=message_you_cannot_unregister_now(), chat_id=user_id
+        )
+        return
+    else:
+        
         if await mark_user_as_inactive_in_db(user_id):
             await send_service_message(
                 message=message_user_has_been_unregistered(), chat_id=user_id
@@ -74,44 +88,40 @@ async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
             await send_service_message(
                 message=message_cannot_unregister_not_registered_user(), chat_id=user_id
             )
-    else:
+
+
+    if await is_current_state_legitimate(
+        user_id=message.from_user.id,
+        state=state,
+        allowed_states=[
+            UserStates.not_ready_to_chat,
+            CommonStates.default,            
+        ],
+    ):
         await send_service_message(
             message=message_you_cannot_unregister_now(), chat_id=message.from_user.id
         )
 
-
-# async def cmd_hard_unregister(message: types.Message):
-#     user_id = message.from_user.id
-#     if await delete_user_profile_from_db(user_id):
-#         await send_service_message(message=message_user_has_already_been_hardly_unregistered(), chat_id=user_id)
-#     else:
-#         await send_service_message(message=message_cannot_unregister_not_registered_user(), chat_id=user_id)
-
-
-# async def cmd_renew_profile(message: types.Message, state: FSMContext):
-#     try:
-#         user_state = await state.get_state()
-#     except:
-#         user_state = None
-#     if (user_state == CommonStates.default):
-#         kjh
-#         await state.clear()
-#         await state.set_state(UserStates.not_ready_to_chat)
-#     else:
-#         await send_service_message(message=message_you_are_not_in_default_state_and_cannot_renew_profile(), chat_id=message.from_user.id)
-#         return
-
-
 async def cmd_register(message: types.Message, state: FSMContext) -> None:
+
     user_id = message.from_user.id
-    user = await get_user_from_db(user_id=user_id)
-    user_state = await state.get_state()
-    if user_state != CommonStates.default:
+    if not await is_current_state_legitimate(
+        user_id=user_id,
+        state=state,
+        allowed_states=[            
+            CommonStates.default,
+            None,
+        ],
+    ):
         await send_service_message(
             message=message_you_are_not_in_default_state_and_cannot_register(),
             chat_id=user_id,
         )
         return False
+    
+    
+    user = await get_user_from_db(user_id=user_id)
+    
     if not user:
         await create_new_registration(
             message,
@@ -178,6 +188,7 @@ async def cmd_start_chatting(message: types.Message, state: FSMContext) -> None:
 
 
 async def default_handler(message: types.Message, state: FSMContext) -> None:
+
     pass
 
 async def cmd_help(message: types.Message, state: FSMContext, total_message_count: int = message_tiers_count.MESSAGE_TIERS_COUNT) -> None:

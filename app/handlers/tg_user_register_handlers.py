@@ -19,6 +19,7 @@ from utils.text_messages import (
     message_your_profile_message_saved_and_profile_successfully_filled_up,
     message_your_message_is_bad_and_was_not_saved,
 )
+from core.states import is_current_state_is_not_allowed, is_current_state_legitimate
 
 # from app.tasks.tasks import celery_app
 
@@ -103,8 +104,11 @@ async def ask_user_to_send_messages_to_fill_profile(
     message: types.Message, state: FSMContext
 ) -> None:
     
-    user_state = await state.get_state()
-    if user_state == RegistrationStates.starting:
+    if await is_current_state_legitimate(
+        user_id=message.from_user.id,
+        state=state,
+        allowed_states=[RegistrationStates.starting]):
+    
         await state.set_state(RegistrationStates.receiving_messages)
         await state.update_data(message_count=0)
         logger.sync_debug(f"User {message.from_user.id} has started registration.")

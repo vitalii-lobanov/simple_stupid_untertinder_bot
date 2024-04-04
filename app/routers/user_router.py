@@ -38,7 +38,7 @@ from handlers.tg_commands import (
     cmd_start_chatting,
     cmd_unregister,
     save_received_telegram_message,
-    cmd_help
+    cmd_help,
 )
 from core.states import check_user_state
 from utils.text_messages import (
@@ -47,7 +47,7 @@ from utils.text_messages import (
     message_you_cannot_register_now_please_unregister,
     message_you_cannot_run_next_please_now,
     message_you_cannot_use_show_my_profile_now,
-    message_you_cannot_start_chatting_now
+    message_you_cannot_start_chatting_now,
 )
 from core.states import is_current_state_legitimate, is_current_state_is_not_allowed
 
@@ -76,13 +76,15 @@ user_router = Router()
 
 @user_router.message(Command(commands=["unregister"]))
 async def cmd_user_unregister(message: types.Message, state: FSMContext) -> None:
+    
     if not await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
         allowed_states=[
             UserStates.ready_to_chat,
-            CommonStates.default,
+            # $CommonStates.default,
             RegistrationStates.completed,
+            # RegistrationStates.starting, CommonStates.just_started_bot
         ],
     ):
         await send_service_message(
@@ -100,19 +102,22 @@ async def cmd_user_unregister(message: types.Message, state: FSMContext) -> None
 # TODO: handle start command corrtectly
 @user_router.message(Command(commands=["start"]))
 async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
-    if await is_current_state_legitimate(
-        user_id=message.from_user.id,
-        state=state,
-        allowed_states=[None,],
-    ):
-        await save_received_telegram_message(message)
+
+    try:
+        if await state.get_state(): 
+            await save_received_telegram_message(message)
+            await send_service_message(
+                message=message_you_should_not_run_start_command_when_not_starting(),
+                chat_id=message.from_user.id,
+                    )
+            return
+        
+
+        await state.set_state(CommonStates.just_started_bot)
         logger.sync_debug("'/start' command received")
         await cmd_start(message, state)
-    else:
-        await send_service_message(
-            message=message_you_should_not_run_start_command_when_not_starting(),
-            chat_id=message.from_user.id,
-        )
+    except Exception as e:       
+        logger.sync_error(msg=f"Error starting user handling: {e}")
 
 
 # @user_router.message(Command(commands=['hard_unregister']))
@@ -132,10 +137,11 @@ async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
 # The user starts a registration process
 @user_router.message(Command(commands=["register"]))
 async def cmd_user_register_start(message: types.Message, state: FSMContext) -> None:
-    if is_current_state_legitimate(
+    if await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
-        allowed_states=[RegistrationStates.starting, CommonStates.default],
+        allowed_states=[RegistrationStates.starting, CommonStates.just_started_bot],
+        #allowed_states=[RegistrationStates.starting],
     ):
         await save_received_telegram_message(message)
         logger.sync_debug("'/register' command received")
@@ -169,7 +175,13 @@ async def cmd_user_show_my_profile(message: types.Message, state: FSMContext) ->
     if not await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
-        allowed_states=[UserStates.chatting_in_progress, UserStates.ready_to_chat, UserStates.not_ready_to_chat, CommonStates.default, RegistrationStates.completed,],
+        allowed_states=[
+            UserStates.chatting_in_progress,
+            UserStates.ready_to_chat,
+            UserStates.not_ready_to_chat,
+            CommonStates.default,
+            RegistrationStates.completed,
+        ],
     ):
         await send_service_message(
             message=message_you_cannot_use_show_my_profile_now(),
@@ -190,7 +202,11 @@ async def cmd_user_start_chatting(message: types.Message, state: FSMContext) -> 
     if await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
-        allowed_states=[UserStates.not_ready_to_chat, CommonStates.default, RegistrationStates.completed,],
+        allowed_states=[
+            UserStates.not_ready_to_chat,
+            CommonStates.default,
+            RegistrationStates.completed,
+        ],
     ):
         await save_received_telegram_message(message)
         await cmd_start_chatting(message, state)
@@ -200,6 +216,7 @@ async def cmd_user_start_chatting(message: types.Message, state: FSMContext) -> 
             chat_id=message.from_user.id,
         )
         # await state.set_state(UserStates.ready_to_chat)
+
 
 @user_router.message(Command(commands=["help"]))
 async def cmd_user_help(message: types.Message, state: FSMContext) -> None:
@@ -237,7 +254,10 @@ async def state_user_is_in_chatting_progress(
 @user_router.message()
 async def default_message_handler(message: types.Message, state: FSMContext) -> None:
     logger.sync_debug("Default message handler...")
-    await save_telegram_message(
-        message=message, message_source=MessageSource.bot_message_received
-    )
-    await default_handler(message, state)
+    if not await  is_current_state_is_not_allowed(
+        user_id=message.from_user.id, state=state, not_allowed_states=[CommonStates.just_started_bot]
+    ):
+        await save_telegram_message(
+            message=message, message_source=MessageSource.bot_message_received
+        )
+        await default_handler(message, state)

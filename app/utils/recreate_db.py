@@ -7,7 +7,8 @@ import asyncpg
 import aioredis
 from config import REDIS_URL
 from config import DOWNLOAD_PATH
-import os, shutil
+import os
+import shutil
 
 async def async_database_exists(engine: AsyncEngine, db_name: str) -> bool:
     async with engine.connect() as conn:

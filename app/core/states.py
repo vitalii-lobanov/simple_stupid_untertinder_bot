@@ -10,11 +10,13 @@ class RegistrationStates(StatesGroup):
     starting = State()
     receiving_messages = State()
     completed = State()
+    
 
 
 class CommonStates(StatesGroup):
     default = State()  # The default state for general bot interactions
     test = State()
+    just_started_bot = State()
 
 
 class UserStates(StatesGroup):

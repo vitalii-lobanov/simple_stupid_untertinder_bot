@@ -124,7 +124,7 @@ async def save_telegram_message(
             poll=message_poll_to_dict(message.poll) if message.poll else None,
             quote=message.quote if message.quote else None,
             story=message.story if message.story else None,
-            sender_in_conversation_id=message.from_user.id
+            sender_in_conversation_id=user_id
             if message.from_user
             else None,
             sticker=message.sticker.file_id if message.sticker else None,
@@ -162,7 +162,7 @@ async def save_tiered_registration_message(
         if reconstructed_message:
             user_id = message.from_user.id
             message_id = reconstructed_message.id
-            profile_data = ProfileData(user_id=user_id, message_id=message_id)
+            profile_data = ProfileData(user_id=user_id, message_id=message_id, profile_version=profile_version)
             try:
                 session.add(profile_data)
                 return True
@@ -225,6 +225,36 @@ async def save_telegram_reaction(
 
 
 @manage_db_session
+async def get_message_for_given_conversation_from_db_by_receiver_id(
+    message_id: int, conversation_id: int, session: AsyncSession = None
+) -> Message:
+    try:
+        result = await session.execute(
+            select(Message)
+            .join(Conversation, Message.conversation_id == Conversation.id)
+            .filter(
+                Message.tg_message_id_for_receiver == message_id,
+                Conversation.id == conversation_id,
+            )
+        )
+        message = result.scalars().first()
+
+        if message:
+            return message
+        else:
+            raise ValueError(
+                f"No message found with ID {message_id} and conversation ID {conversation_id}"
+            )
+    except Exception as e:
+        await logger.error(
+            msg=f"Failed to retrieve message: {e}", chat_id=None
+        )  # TODO: Replace None with actual chat_id if available
+        raise e
+
+
+
+
+@manage_db_session
 async def get_message_for_given_conversation_from_db_by_sender_id(
     message_id: int, conversation_id: int, session: AsyncSession = None
 ) -> Message:
@@ -239,14 +269,25 @@ async def get_message_for_given_conversation_from_db_by_sender_id(
         )
         message = result.scalars().first()
 
+
+        # # DIRTY DIRTY HACK DO NOT USE
+        # if not message:
+        #     result = await session.execute(
+        #     select(Message)
+        #     .join(Conversation, Message.conversation_id == Conversation.id)
+        #     .filter(
+        #         Message.tg_message_id_for_receiver == message_id,
+        #         Conversation.id == conversation_id,
+        #     )
+        # )
+        # message = result.scalars().first()
+
         if message:
             return message
         else:
-            raise ValueError(
-                f"No message found with ID {message_id} and conversation ID {conversation_id}"
-            )
+            return None
     except Exception as e:
-        await logger.error(
+        logger.sync_debug(
             msg=f"Failed to retrieve message: {e}", chat_id=None
         )  # TODO: Replace None with actual chat_id if available
         raise e
@@ -359,6 +400,7 @@ async def set_conversation_inactive(
         conversation = result.scalars().first()
         if conversation:
             conversation.is_active = False
+            conversation.end_time = datetime.now()
             # session.commit()
         else:
             raise ValueError(f"No conversation found with ID {conversation_id}")

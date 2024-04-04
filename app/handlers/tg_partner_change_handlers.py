@@ -23,7 +23,7 @@ from utils.text_messages import (
     message_your_partner_sent_end_command_earlier_and_timer_expired,
     message_your_next_please_command_received_successfully_now_wait
 )
-
+from core.states import is_current_state_is_not_allowed, is_current_state_legitimate
 
 async def pause(time: int = 0) -> None:
     await asyncio.sleep(time)
@@ -89,8 +89,11 @@ async def next_please_handler(message: types.Message, state: FSMContext) -> None
     # TODO: REMOVE IT!!!!!!!!!!!!!!
     #await state.set_state(UserStates.chatting_in_progress)
 
-    user_state = await state.get_state()
-    if user_state != UserStates.chatting_in_progress:
+    if not await is_current_state_legitimate(
+        user_id=message.from_user.id,
+        state=state,
+        allowed_states=[UserStates.chatting_in_progress],
+    ):
         await logger.info(msg=message_you_are_not_in_chatting_state(), state=state)
         return
     
