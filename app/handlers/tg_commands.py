@@ -59,14 +59,6 @@ async def cmd_start(message: types.Message, state: FSMContext) -> None:
     await send_service_message(
         message=message_cmd_start_welcome_message(), chat_id=message.from_user.id
     )
-    await send_service_message(
-        message=message_cmd_start_welcome_message(),
-        chat_id=message.from_user.id,
-    )
-    await send_service_message(
-        message=message_help_message(),
-        chat_id=message.from_user.id,
-    )
 
 
 async def cmd_unregister(message: types.Message, state: FSMContext) -> None:

@@ -26,11 +26,13 @@ from services.dao import (
     get_conversation_partner_id_from_db,
     get_currently_active_conversation_for_user_from_db,
     get_max_profile_version_of_user_from_db,
-    get_message_for_given_conversation_from_db,
+    get_message_for_given_conversation_from_db_by_sender_id,
     get_message_in_inactive_conversations_from_db,
     get_new_partner_for_conversation_for_user_from_db,
     save_telegram_message,
     save_telegram_reaction,
+    set_is_ready_to_chat_flag_for_user_in_db, 
+    set_telegram_ids_for_stored_message
 )
 from services.emoji_rank import EmojiRank
 from services.score_tiers import profile_disclosure_tiers_score_levels
@@ -44,6 +46,7 @@ from utils.text_messages import (
     message_you_now_connected_to_the_conversation_partner,
     message_you_should_not_react_your_own_messages,
     message_you_reacted_messge_from_another_conversation,
+    message_below_all_the_text_is_from_chat_partner,
 )
 
 
@@ -109,7 +112,10 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
             # Update the state for both users
             partner_context = await get_user_context(user_id=partner.id)
             await initialize_states_for_chatter_to_start_conversation(state=state)
+            await set_is_ready_to_chat_flag_for_user_in_db(user_id=user_id, is_ready_to_chat=False)
+
             await initialize_states_for_chatter_to_start_conversation(state=partner_context)
+            await set_is_ready_to_chat_flag_for_user_in_db(user_id=partner.id, is_ready_to_chat=False)
 
             # Inform both the users and log
             await logger.info(
@@ -117,8 +123,18 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
                 chat_id=user_id,
             )
 
+            await send_service_message(
+                message= message_below_all_the_text_is_from_chat_partner(),
+                chat_id=user_id,
+            )
+
             await logger.info(
                 msg=message_a_conversation_partner_found(),
+                chat_id=partner.id,
+            )
+
+            await send_service_message(
+                message= message_below_all_the_text_is_from_chat_partner(),
                 chat_id=partner.id,
             )
 
@@ -147,14 +163,19 @@ async def state_user_is_in_chatting_progress_handler(message: types.Message, sta
                 raise Exception(f"Partner is not in state 'chatting_in_progress'. User_id: {user_id}, partner_id: {partner_id}")        
             
             if partner_id is not None:            
+                    
                     reconstructed_message = await save_telegram_message(                    
                         message=message,
                         message_source=MessageSource.conversation,
                         conversation_id=conversation.id,
                     )
-                    await send_reconstructed_telegram_message_to_user(
+                    # We do not know the message id in Telegram before actuall sending it
+                    sent_message = await send_reconstructed_telegram_message_to_user(
                         message=reconstructed_message, user_id=partner_id
                     )
+                    # Now, store the message id in the database to find the message later
+                    await set_telegram_ids_for_stored_message(message_id=reconstructed_message.id,
+                                                    tg_message_id_for_sender=sent_message.message_id)
             else:
                 await logger.error(
                     msg="Partner ID is None in state_user_is_in_chatting_progress_handler. Please contact support."
@@ -221,7 +242,7 @@ async def message_reaction_handler(
             "Failed to find the conversation where the message was sent"
         )
 
-    message_from_db = await get_message_for_given_conversation_from_db(
+    message_from_db = await get_message_for_given_conversation_from_db_by_sender_id(
         message_id=message_reaction.message_id, conversation_id=conversation.id    )
     if message_from_db is None:
         message_from_db = await get_message_in_inactive_conversations_from_db(
@@ -291,11 +312,11 @@ async def message_reaction_handler(
         ranker = EmojiRank()
         rank = ranker.get_rank(emoji) * inverse_multiplier
 
-        message = await get_message_for_given_conversation_from_db(
+        message = await get_message_for_given_conversation_from_db_by_sender_id(
             message_id=message_reaction.message_id, conversation_id=conversation.id
         )
         message_id = message.id #TODO: if message is none — send an error 
-        tg_message_id = message.tg_message_id
+        tg_message_id_for_receiver = message.tg_message_id_for_receiver
 
         # Save the reaction
         # TODO: -1 logic from __get_message_sender_id_from_db__()
@@ -303,7 +324,7 @@ async def message_reaction_handler(
             user_id=message_reaction.user.id,
             # I do not know why -1 is needed
             message_id=message_id,
-            tg_message_id= tg_message_id,
+            tg_message_id_for_receiver= tg_message_id_for_receiver,
             new_emoji=new_emoji,
             old_emoji=old_emoji,
             timestamp=datetime.now(),
@@ -319,7 +340,7 @@ async def message_reaction_handler(
 
             await bot_instance.set_message_reaction(
                 chat_id=partner_id,
-                message_id=tg_message_id,
+                message_id=tg_message_id_for_receiver,
                 reaction=[emoji_reaction] if emoji_reaction else [],
             )
 

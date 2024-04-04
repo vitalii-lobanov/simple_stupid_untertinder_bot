@@ -18,7 +18,7 @@ from services.serializing_helpers import (
     link_preview_options_to_dict,
     location_to_dict,
     message_entities_to_dict,
-    message_poll_to_dict, 
+    message_poll_to_dict,
 )
 from services.tg_helpers import download_telegram_file, get_telegram_file
 from sqlalchemy import func
@@ -37,10 +37,11 @@ async def save_telegram_message(
     tier: int = -1,
     conversation_id: int = None,
     profile_version: int = -1,
+    message_id_for_sender: int = None,
 ) -> Message:
     user_id = message.from_user.id
-    message_id = message.message_id
-    
+    message_id_for_receiver = message.message_id
+
     # Extract the file ID of the largest photo
     # if message.photo:
     #     photo = message.photo[
@@ -55,38 +56,38 @@ async def save_telegram_message(
         if value is not None:
             try:
                 downloaded_file = await download_telegram_file(file_id=value)
-                if not downloaded_file:                    
+                if not downloaded_file:
                     return False
                 else:
                     multimedia_list[key] = await download_telegram_file(file_id=value)
             except Exception as e:
                 logger.sync_error(msg=f"Error downloading multimedia: {e}")
                 return False
-                #raise e
-    
+                # raise e
+
     if message.forward_date:
         forward_date = message.forward_date
         forward_date_naive = forward_date.replace(tzinfo=None)
     else:
         forward_date_naive = None
 
-
     try:
         new_message = Message(
             user_id=user_id,
             tier=tier,
             message_source=message_source,
-            tg_message_id=message_id,
+            tg_message_id_for_receiver=message_id_for_receiver,
+            tg_message_id_for_sender=message_id_for_sender,
             conversation_id=conversation_id,
             user_profile_version=profile_version,
             text=message.text or None,
             audio=multimedia_list["audio"],
-            video = multimedia_list["video"],            
-            voice=multimedia_list["voice"], 
-            video_note=multimedia_list["video_note"],           
+            video=multimedia_list["video"],
+            voice=multimedia_list["voice"],
+            video_note=multimedia_list["video_note"],
             image=multimedia_list["photo"],
             document=multimedia_list["document"],
-            photo=multimedia_list["photo"],            
+            photo=multimedia_list["photo"],
             author_signature=message.author_signature
             if message.author_signature
             else None,
@@ -120,12 +121,14 @@ async def save_telegram_message(
             original_sender_username=message.forward_from.username
             if message.forward_from
             else None,
-            poll= message_poll_to_dict(message.poll) if message.poll else None,
+            poll=message_poll_to_dict(message.poll) if message.poll else None,
             quote=message.quote if message.quote else None,
             story=message.story if message.story else None,
-            sender_in_conversation_id=message.from_user.id if message.from_user else None,
-            sticker = message.sticker.file_id if message.sticker else None,
-            animation = message.animation.file_id if message.animation else None,
+            sender_in_conversation_id=message.from_user.id
+            if message.from_user
+            else None,
+            sticker=message.sticker.file_id if message.sticker else None,
+            animation=message.animation.file_id if message.animation else None,
         )
         session.add(new_message)
         # session.commit()
@@ -144,8 +147,7 @@ async def save_tiered_registration_message(
     message_count: int,
     profile_version: int,
 ) -> bool:
-    
-    #tier = message_count - 1
+    # tier = message_count - 1
     tier = message_count
     message_source = MessageSource.registration_profile
 
@@ -160,10 +162,10 @@ async def save_tiered_registration_message(
         if reconstructed_message:
             user_id = message.from_user.id
             message_id = reconstructed_message.id
-            profile_data = ProfileData(user_id=user_id, message_id=message_id)            
+            profile_data = ProfileData(user_id=user_id, message_id=message_id)
             try:
                 session.add(profile_data)
-                return True                
+                return True
             except Exception as e:
                 # session.rollback()
                 # Assuming you have a logger configured
@@ -171,7 +173,7 @@ async def save_tiered_registration_message(
                     msg=f"Failed to save profile data: {e}", chat_id=user_id
                 )
                 return False
-        else:            
+        else:
             await logger.error(
                 msg=f"Failed to save profile data message: {message}", chat_id=user_id
             )
@@ -184,7 +186,7 @@ async def save_telegram_reaction(
     new_emoji: str,
     old_emoji: Optional[str] = None,
     timestamp: Optional[datetime] = None,
-    tg_message_id: int = -1,
+    tg_message_id_for_receiver: int = -1,
     message_id: int = None,
     rank: int = 0,
     session: AsyncSession = None,
@@ -194,7 +196,7 @@ async def save_telegram_reaction(
         reaction = Reaction(
             user_id=user_id,
             message_id=message_id,
-            tg_message_id=tg_message_id,
+            tg_message_id_for_receiver=tg_message_id_for_receiver,
             new_emoji=new_emoji,
             old_emoji=old_emoji,
             timestamp=timestamp,
@@ -223,7 +225,7 @@ async def save_telegram_reaction(
 
 
 @manage_db_session
-async def get_message_for_given_conversation_from_db(
+async def get_message_for_given_conversation_from_db_by_sender_id(
     message_id: int, conversation_id: int, session: AsyncSession = None
 ) -> Message:
     try:
@@ -231,22 +233,10 @@ async def get_message_for_given_conversation_from_db(
             select(Message)
             .join(Conversation, Message.conversation_id == Conversation.id)
             .filter(
-                Message.tg_message_id == message_id, Conversation.id == conversation_id
+                Message.tg_message_id_for_sender == message_id,
+                Conversation.id == conversation_id,
             )
         )
-        message = result.scalars().first()
-
-        # Handle Telegram message numering, dirty hack
-        message_id = message_id - 1
-        if message is None:
-            result = await session.execute(
-                select(Message)
-                .join(Conversation, Message.conversation_id == Conversation.id)
-                .filter(
-                    Message.tg_message_id == message_id,
-                    Conversation.id == conversation_id,
-                )
-            )
         message = result.scalars().first()
 
         if message:
@@ -691,3 +681,35 @@ async def save_file_and_store_path_in_db(
     except Exception as e:
         logger.sync_error(msg=f"Error saving file: {e}")
         await session.rollback()
+
+
+@manage_db_session
+async def set_telegram_ids_for_stored_message(
+    message_id: int = -1,
+    tg_message_id_for_receiver: int = None,
+    tg_message_id_for_sender: int = None,
+    session: AsyncSession = None,
+) -> bool:
+    try:
+        result = await session.execute(select(Message).filter(Message.id == message_id))
+        message =  result.scalars().first()
+        if message:
+            if tg_message_id_for_receiver is not None:
+                message.tg_message_id_for_receiver = tg_message_id_for_receiver
+            if tg_message_id_for_sender is not None:
+                message.tg_message_id_for_sender = tg_message_id_for_sender
+
+            return True
+        else:
+            raise ValueError(
+                f"No message found with ID during set_telegram_ids_for_stored_message: {message_id}"
+            )
+    except SQLAlchemyError as e:
+        session.rollback()
+        logger.sync_error(
+            msg=f"SQLAlchemy error during set_telegram_ids_for_stored_message: {e}"
+        )
+    except Exception as e:
+        logger.sync_error(msg=f"Error during set_telegram_ids_for_stored_message: {e}")
+        session.rollback()
+    return False

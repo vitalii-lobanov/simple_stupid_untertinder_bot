@@ -88,22 +88,21 @@ async def send_reconstructed_telegram_message_to_user(
         # Handle non-media types separately
         # These types cannot be part of a media group and should be sent as separate messages
         if message.sticker is not None:
-            await bot_instance.send_sticker(user_id, sticker=message.sticker)
+            res_message = await bot_instance.send_sticker(user_id, sticker=message.sticker)
 
 
         # We do not need to process animationn separately, it can be handled as a document
-        # if message.animation is not None:
-        #     await bot_instance.send_animation(user_id, animation=message.animation)
+       
 
         if message.location is not None:
-            await bot_instance.send_location(
+            res_message = await bot_instance.send_location(
                 user_id,
                 latitude=message.location['latitude'],
                 longitude=message.location['longitude'],
             )
 
         if message.poll is not None:
-            await bot_instance.send_poll(
+            res_message = await bot_instance.send_poll(
                 user_id,
                 question=message.poll['question'],
                 options=[option['text'] for option in message.poll['options']],
@@ -116,16 +115,16 @@ async def send_reconstructed_telegram_message_to_user(
                 close_date=message.poll['close_date'],
                 # Add any other relevant fields required for sending a poll
         )    
-
+        
         # If there's a media group or other attachments, send them
         if media_group:
-            await bot_instance.send_media_group(user_id, media_group)
+            res_message = await bot_instance.send_media_group(user_id, media_group)
         elif message.photo is not None:
-            await bot_instance.send_photo(user_id, photo=extract_file_id_from_path(message.photo), caption=caption)
+            res_message = await bot_instance.send_photo(user_id, photo=extract_file_id_from_path(message.photo), caption=caption)
         elif message.video is not None:
-            await bot_instance.send_video(user_id, video=extract_file_id_from_path(message.video), caption=caption)
+            res_message = await bot_instance.send_video(user_id, video=extract_file_id_from_path(message.video), caption=caption)
         elif message.document is not None:
-            await bot_instance.send_document(
+            res_message =  await bot_instance.send_document(
                 user_id, document=extract_file_id_from_path(message.document), caption=caption
             )
         # If there is only text, send it
@@ -134,9 +133,11 @@ async def send_reconstructed_telegram_message_to_user(
                 text = caption
             else:
                 text = message.text
-            await bot_instance.send_message(
+            res_message = await bot_instance.send_message(
                 chat_id=user_id, text=text,  entities=message.entities
             )
+
+        return res_message
 
 
 async def send_service_message(message: str, state: FSMContext = None, chat_id: int = None

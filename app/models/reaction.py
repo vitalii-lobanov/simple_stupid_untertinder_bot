@@ -8,7 +8,7 @@ class Reaction(Base):
     id = Column(Integer, primary_key=True)
     message_id = Column(Integer, ForeignKey("messages.id"))
     user_id = Column(BIGINT, ForeignKey("users.id"))
-    tg_message_id = Column(BIGINT, default=None)
+    tg_message_id_for_receiver = Column(BIGINT, default=None)
     #sender_message_id = Column(Integer, default=None)
     new_emoji = Column(String, default=None)
     old_emoji = Column(String, default=None)

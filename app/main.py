@@ -33,8 +33,13 @@ if __name__ == "__main__":
 
 
 # TODO: look TODO's
-# Check -1 tier on saved messages and /show_my_profile's messages
+# TODO: message not found (like handler)     
+
+# TODO: Profile version is null
+# TODO: check reactiuons for the multimedia messages
 # Try Trunk Check extension instead of ruff
+# TODO: change info message for messages before /start command
+# TODO: end time for the conversation in the DB
 # TODO: -> and argument types for functions
 # TODO: looak at all the .get_state() and change them to check_user_state() from core.states
 # TODO: save all the messages in the database. Use all the handlers. Add saving from logger and bot_service_message | ??
@@ -54,3 +59,4 @@ if __name__ == "__main__":
 # TODO: json / list serializers from dao.py to helpers module
 # TODO: handle forwarded messages in registration process
 # TODO: handle forwarded messages in conversations
+# TODO: racing conditions: when user runs start_chatting, the user's is_ready_to_chat flag is set to True, the other user could start the conversation and get a new partner, while she really already in another conversation

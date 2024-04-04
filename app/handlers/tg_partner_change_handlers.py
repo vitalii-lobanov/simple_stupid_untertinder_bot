@@ -21,6 +21,7 @@ from utils.text_messages import (
     message_you_sent_end_command_earlier_and_timer_expired,
     message_you_sent_end_command_earlier_and_your_just_sent_it_now,
     message_your_partner_sent_end_command_earlier_and_timer_expired,
+    message_your_next_please_command_received_successfully_now_wait
 )
 
 
@@ -86,14 +87,19 @@ async def __close_up_conversation__(
 
 async def next_please_handler(message: types.Message, state: FSMContext) -> None:
     # TODO: REMOVE IT!!!!!!!!!!!!!!
-    await state.set_state(UserStates.chatting_in_progress)
+    #await state.set_state(UserStates.chatting_in_progress)
 
     user_state = await state.get_state()
     if user_state != UserStates.chatting_in_progress:
         await logger.info(msg=message_you_are_not_in_chatting_state(), state=state)
         return
-
+    
     user_id = message.from_user.id
+    await send_service_message(
+        message=message_your_next_please_command_received_successfully_now_wait(),
+        chat_id = message.from_user.id,
+    )
+   
     await state.set_state(UserStates.wants_to_end_chatting)
 
     partner_id = await get_conversation_partner_id_from_db(user_id=user_id)

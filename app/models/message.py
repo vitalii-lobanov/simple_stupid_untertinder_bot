@@ -18,7 +18,9 @@ class Message(Base):
     __tablename__ = "messages"
     id = Column(Integer, primary_key=True)
     user_id = Column(BIGINT, ForeignKey("users.id"))
-    tg_message_id = Column(Integer)
+    tg_message_id_for_receiver = Column(Integer)
+    tg_message_id_for_sender = Column(Integer)
+
     message_source = Column(Enum(MessageSource))
     conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=True)
     text = Column(String)
@@ -68,12 +70,12 @@ class Message(Base):
         "ProfileData", order_by=ProfileData.id, back_populates="message"
     )
     # # reactions = relationship(
-    # #     "Reaction", backref="message_reactions", foreign_keys="[Reaction.tg_message_id]"
+    # #     "Reaction", backref="message_reactions", foreign_keys="[Reaction.tg_message_id_for_receiver]"
     # # )
     # reactions = relationship(
     #     "Reaction",
     #     back_populates="message",
-    #     foreign_keys="[Reaction.tg_message_id]"
+    #     foreign_keys="[Reaction.tg_message_id_for_receiver]"
     # )
 
     # reactions = relationship(
