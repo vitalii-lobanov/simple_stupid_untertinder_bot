@@ -16,7 +16,8 @@ from contextlib import asynccontextmanager
 
 
 if os.getenv("LOG_LEVEL") == "DEBUG":
-    engine = create_async_engine(DATABASE_URI, echo=True)
+    #TODO: change back to True
+    engine = create_async_engine(DATABASE_URI, echo=False)
 else:
     engine = create_async_engine(DATABASE_URI, echo=False)
 
