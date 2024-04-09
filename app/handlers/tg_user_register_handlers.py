@@ -57,7 +57,7 @@ async def registration_failed(
     message: types.Message, state: FSMContext, exception: Exception
 ) -> None:
     d_logger.debug("D_logger")
-    await state.set_state(CommonStates.default)
+    await state.set_state(CommonStates.just_started_bot)
     await logger.error(
         msg=f"{message_registration_failed()} Exception: {str(exception)}", state=state
     )

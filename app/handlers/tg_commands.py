@@ -70,30 +70,15 @@ async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
 
     # await save_telegram_message(message=message, message_source=MessageSource.command_received)
     user_id = message.from_user.id
-    if  not await  is_current_state_legitimate(
-        user_id=message.from_user.id,
-        state=state,
-        allowed_states=[
-            UserStates.ready_to_chat,
-            CommonStates.default,
-            UserStates.not_ready_to_chat,
-            RegistrationStates.completed,
-        ],
-    ):
+           
+    if await mark_user_as_inactive_in_db(user_id):
         await send_service_message(
-            message=message_you_cannot_unregister_now(), chat_id=user_id
+            message=message_user_has_been_unregistered(), chat_id=user_id
         )
-        return
     else:
-        
-        if await mark_user_as_inactive_in_db(user_id):
-            await send_service_message(
-                message=message_user_has_been_unregistered(), chat_id=user_id
-            )
-        else:
-            await send_service_message(
-                message=message_cannot_unregister_not_registered_user(), chat_id=user_id
-            )
+        await send_service_message(
+            message=message_cannot_unregister_not_registered_user(), chat_id=user_id
+        )
 
 
     # if await is_current_state_legitimate(
@@ -111,20 +96,6 @@ async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
 async def cmd_register(message: types.Message, state: FSMContext) -> None:
     d_logger.debug("D_logger")
     user_id = message.from_user.id
-    if not await is_current_state_legitimate(
-        user_id=user_id,
-        state=state,
-        allowed_states=[            
-            CommonStates.default,
-            None,
-        ],
-    ):
-        await send_service_message(
-            message=message_you_are_not_in_default_state_and_cannot_register(),
-            chat_id=user_id,
-        )
-        return False
-    
     
     user = await get_user_from_db(user_id=user_id)
     

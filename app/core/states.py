@@ -11,11 +11,9 @@ class RegistrationStates(StatesGroup):
     starting = State()
     receiving_messages = State()
     completed = State()
-    
 
 
 class CommonStates(StatesGroup):
-    default = State()  # The default state for general bot interactions
     test = State()
     just_started_bot = State()
 
@@ -56,7 +54,9 @@ async def get_user_context(user_id: int) -> FSMContext:
     return user_context
 
 
-async def check_user_state(user_id:int = -1, state: Union[RegistrationStates, UserStates, CommonStates] = None) -> bool:
+async def check_user_state(
+    user_id: int = -1, state: Union[RegistrationStates, UserStates, CommonStates] = None
+) -> bool:
     d_logger.debug("D_logger")
     if user_id == -1:
         raise ValueError("User id must be provided")
@@ -67,8 +67,13 @@ async def check_user_state(user_id:int = -1, state: Union[RegistrationStates, Us
         return True
     else:
         return False
-    
-async def is_current_state_legitimate(user_id: int, state: FSMContext, allowed_states: list[Union[RegistrationStates, UserStates, CommonStates]]) -> bool:
+
+
+async def is_current_state_legitimate(
+    user_id: int,
+    state: FSMContext,
+    allowed_states: list[Union[RegistrationStates, UserStates, CommonStates]],
+) -> bool:
     d_logger.debug("D_logger")
     for state in allowed_states:
         if state is None:
@@ -77,7 +82,12 @@ async def is_current_state_legitimate(user_id: int, state: FSMContext, allowed_s
             return True
     return False
 
-async def is_current_state_is_not_allowed(user_id: int, state: FSMContext, not_allowed_states: list[Union[RegistrationStates, UserStates, CommonStates]]) -> bool:
+
+async def is_current_state_is_not_allowed(
+    user_id: int,
+    state: FSMContext,
+    not_allowed_states: list[Union[RegistrationStates, UserStates, CommonStates]],
+) -> bool:
     d_logger.debug("D_logger")
     for state in not_allowed_states:
         if await check_user_state(user_id=user_id, state=state):
@@ -85,31 +95,61 @@ async def is_current_state_is_not_allowed(user_id: int, state: FSMContext, not_a
     return False
 
 
-start_cmd_allowed_states=[None]
-regitser_cmd_allowed_states = [RegistrationStates.starting]
-show_my_profile_cmd_allowed_states = [RegistrationStates.completed, CommonStates.default, CommonStates.test, CommonStates.just_started_bot,
-              UserStates.not_ready_to_chat, UserStates.ready_to_chat, UserStates.chatting_in_progress, UserStates.wants_to_end_chatting]
-start_chatting_cmd_allowed_states = [RegistrationStates.completed, UserStates.not_ready_to_chat]
+start_cmd_allowed_states = [None]
+regitser_cmd_allowed_states = [
+    RegistrationStates.starting,
+    CommonStates.just_started_bot,
+    RegistrationStates.completed,
+]
+unregister_cmd_allowed_states = [
+    RegistrationStates.completed,
+    UserStates.not_ready_to_chat,
+]
+show_my_profile_cmd_allowed_states = (
+    [
+        UserStates.chatting_in_progress,
+        UserStates.ready_to_chat,
+        UserStates.not_ready_to_chat,
+        RegistrationStates.completed,
+    ],
+)
+
+start_chatting_cmd_allowed_states = [
+    RegistrationStates.completed,
+    UserStates.not_ready_to_chat,
+]
 next_please_cmd_allowed_states = [UserStates.chatting_in_progress]
-help_cmd_allowed_states = [RegistrationStates.starting, RegistrationStates.receiving_messages, RegistrationStates.completed,
-              CommonStates.default, CommonStates.test, CommonStates.just_started_bot,
-              UserStates.not_ready_to_chat, UserStates.ready_to_chat, UserStates.chatting_in_progress, UserStates.wants_to_end_chatting, None]
+help_cmd_allowed_states = [
+    RegistrationStates.starting,
+    RegistrationStates.receiving_messages,
+    RegistrationStates.completed,
+    CommonStates.test,
+    CommonStates.just_started_bot,
+    UserStates.not_ready_to_chat,
+    UserStates.ready_to_chat,
+    UserStates.chatting_in_progress,
+    UserStates.wants_to_end_chatting,
+    None,
+]
 
 
-all_states = [RegistrationStates.starting, RegistrationStates.receiving_messages, RegistrationStates.completed,
-              CommonStates.default, CommonStates.test, CommonStates.just_started_bot,
-              UserStates.not_ready_to_chat, UserStates.ready_to_chat, UserStates.chatting_in_progress, UserStates.wants_to_end_chatting]
-
-
-
-
+all_states = [
+    RegistrationStates.starting,
+    RegistrationStates.receiving_messages,
+    RegistrationStates.completed,
+    CommonStates.test,
+    CommonStates.just_started_bot,
+    UserStates.not_ready_to_chat,
+    UserStates.ready_to_chat,
+    UserStates.chatting_in_progress,
+    UserStates.wants_to_end_chatting,
+]
 
 
 # class RegistrationStates(StatesGroup):
 #     starting = State()
 #     receiving_messages = State()
 #     completed = State()
-    
 
 
 # class CommonStates(StatesGroup):
