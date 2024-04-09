@@ -80,14 +80,16 @@ user_router.message.middleware(MessageOrderingMiddleware(user_router))
 @user_router.message(Command(commands=["unregister"]))
 async def cmd_user_unregister(message: types.Message, state: FSMContext) -> None:
     d_logger.debug("D_logger")
+    current_state = await state.get_state()
+    d_logger.debug(f"Trying to unregister. Current state: {current_state}")
     if not await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
         allowed_states=[
             UserStates.ready_to_chat,
-            # $CommonStates.default,
+            CommonStates.default,
+            UserStates.not_ready_to_chat,
             RegistrationStates.completed,
-            # RegistrationStates.starting, CommonStates.just_started_bot
         ],
     ):
         await send_service_message(

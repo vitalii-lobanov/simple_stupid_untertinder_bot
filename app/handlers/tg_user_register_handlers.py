@@ -104,7 +104,7 @@ async def complete_registration(message: types.Message, state: FSMContext) -> No
     else:
         await logger.error(msg="No user found with ID {}", user_id=user_id)
         raise ValueError(f"No user found with ID {user_id}")
-    await state.set_state(CommonStates.default)
+    await state.set_state(RegistrationStates.completed)
 
 
 async def ask_user_to_send_messages_to_fill_profile(

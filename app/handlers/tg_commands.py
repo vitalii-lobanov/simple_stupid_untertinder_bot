@@ -67,6 +67,7 @@ async def cmd_start(message: types.Message, state: FSMContext) -> None:
 
 async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
     d_logger.debug("D_logger")
+
     # await save_telegram_message(message=message, message_source=MessageSource.command_received)
     user_id = message.from_user.id
     if  not await  is_current_state_legitimate(
@@ -75,6 +76,7 @@ async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
         allowed_states=[
             UserStates.ready_to_chat,
             CommonStates.default,
+            UserStates.not_ready_to_chat,
             RegistrationStates.completed,
         ],
     ):
@@ -94,17 +96,17 @@ async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
             )
 
 
-    if await is_current_state_legitimate(
-        user_id=message.from_user.id,
-        state=state,
-        allowed_states=[
-            UserStates.not_ready_to_chat,
-            CommonStates.default,            
-        ],
-    ):
-        await send_service_message(
-            message=message_you_cannot_unregister_now(), chat_id=message.from_user.id
-        )
+    # if await is_current_state_legitimate(
+    #     user_id=message.from_user.id,
+    #     state=state,
+    #     allowed_states=[
+    #         UserStates.not_ready_to_chat,
+    #         CommonStates.default,            
+    #     ],
+    # ):
+    #     await send_service_message(
+    #         message=message_you_cannot_unregister_now(), chat_id=message.from_user.id
+    #     )
 
 async def cmd_register(message: types.Message, state: FSMContext) -> None:
     d_logger.debug("D_logger")

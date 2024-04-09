@@ -13,14 +13,14 @@ from models.base import MessageSource
 from models.message import Message
 from models.reaction import Reaction
 from models.user import User
-from services.serializing_helpers import (
+from helpers.serializing_helpers import (
     get_multimedia_paths_from_message,
     link_preview_options_to_dict,
     location_to_dict,
     message_entities_to_dict,
     message_poll_to_dict,
 )
-from services.tg_helpers import download_telegram_file, get_telegram_file
+from helpers.tg_helpers import download_telegram_file, get_telegram_file
 from sqlalchemy import func
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession

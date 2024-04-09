@@ -14,13 +14,13 @@ from utils.d_debug import d_logger
 import bleach
 from database.engine import manage_db_session
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.serializing_helpers import extract_file_id_from_path
+from helpers.serializing_helpers import extract_file_id_from_path
 from utils.text_messages import message_this_message_is_forwarded
 from services.dao import (
     get_tiered_profile_message_from_db,
     get_max_profile_version_of_user_from_db,
 )
-from services.serializing_helpers import message_entities_to_dict
+from helpers.serializing_helpers import message_entities_to_dict
 
 
 async def send_reconstructed_telegram_message_to_user(

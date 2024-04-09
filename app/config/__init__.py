@@ -10,8 +10,8 @@ BOT_TOKEN = os.getenv("TELEGRAM_API_KEY")
 #TODO: check security
 DATABASE_URI = "postgresql+asyncpg://pgsql_user:mb3L*nYTg7C!eBMC@localhost:5432/dating_bot_database"
 
-# TODO: set correct values
-NEXT_PLEASE_WAITING_TIMEOUT = 3
+# TODO: set correct values 
+NEXT_PLEASE_WAITING_TIMEOUT = 10*60*60
 
 app_directory = os.path.dirname(os.path.abspath(__file__))
 root_directory = os.path.dirname(app_directory)
