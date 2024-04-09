@@ -15,6 +15,7 @@ from services.dao import (
     set_conversation_inactive,
 )
 from utils.debug import logger
+from utils.d_debug import d_logger
 from utils.text_messages import (
     message_you_are_not_in_chatting_state,
     message_you_send_end_command_and_your_partner_has_sent_it_earlier,
@@ -31,6 +32,7 @@ async def pause(time: int = 0) -> None:
 
 
 async def __perform_state_clearing_on_conversation_end__(state: FSMContext) -> bool:
+    d_logger.debug("D_logger")
     user_state = await state.get_state()
     if (user_state == UserStates.chatting_in_progress) or (
         user_state == UserStates.wants_to_end_chatting
@@ -45,6 +47,7 @@ async def __perform_state_clearing_on_conversation_end__(state: FSMContext) -> b
 async def __close_up_conversation__(
     message: types.Message, state: FSMContext, time_countdown: int
 ) -> bool:
+    d_logger.debug("D_logger")
     user_id = message.from_user.id
 
     logger.sync_debug(
@@ -80,12 +83,15 @@ async def __close_up_conversation__(
         conversation = await get_currently_active_conversation_for_user_from_db(
             user_id=user_id
         )
+        await state.clear()
+        await state.set_state(UserStates.not_ready_to_chat)
         if await is_conversation_active(conversation_id=conversation.id):
             await set_conversation_inactive(conversation_id=conversation.id)
         return True
 
 
 async def next_please_handler(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     # TODO: REMOVE IT!!!!!!!!!!!!!!
     #await state.set_state(UserStates.chatting_in_progress)
 
@@ -129,6 +135,7 @@ async def next_please_handler(message: types.Message, state: FSMContext) -> None
                 message=message_you_sent_end_command_earlier_and_your_just_sent_it_now(),
                 chat_id=partner_id,
             )
+           
 
     elif partner_state == UserStates.chatting_in_progress:
         close_result = await __close_up_conversation__(

@@ -26,6 +26,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from utils.debug import logger
+from utils.d_debug import d_logger
 from datetime import datetime
 
 
@@ -39,6 +40,7 @@ async def save_telegram_message(
     profile_version: int = -1,
     message_id_for_sender: int = None,
 ) -> Message:
+    d_logger.debug("D_logger")
     user_id = message.from_user.id
     message_id_for_receiver = message.message_id
 
@@ -147,6 +149,7 @@ async def save_tiered_registration_message(
     message_count: int,
     profile_version: int,
 ) -> bool:
+    d_logger.debug("D_logger")
     # tier = message_count - 1
     tier = message_count
     message_source = MessageSource.registration_profile
@@ -191,6 +194,7 @@ async def save_telegram_reaction(
     rank: int = 0,
     session: AsyncSession = None,
 ) -> bool:
+    d_logger.debug("D_logger")
     try:
         # Create a new Reaction instance
         reaction = Reaction(
@@ -228,6 +232,7 @@ async def save_telegram_reaction(
 async def get_message_for_given_conversation_from_db_by_receiver_id(
     message_id: int, conversation_id: int, session: AsyncSession = None
 ) -> Message:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(
             select(Message)
@@ -258,6 +263,7 @@ async def get_message_for_given_conversation_from_db_by_receiver_id(
 async def get_message_for_given_conversation_from_db_by_sender_id(
     message_id: int, conversation_id: int, session: AsyncSession = None
 ) -> Message:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(
             select(Message)
@@ -297,6 +303,7 @@ async def get_message_for_given_conversation_from_db_by_sender_id(
 async def get_currently_active_conversation_for_user_from_db(
     user_id: int, session: AsyncSession = None
 ) -> Conversation | None:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(
             select(Conversation).filter(
@@ -332,6 +339,7 @@ async def get_currently_active_conversation_for_user_from_db(
 async def get_message_in_inactive_conversations_from_db(
     message_id: int, session: AsyncSession = None
 ) -> Message:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(
             select(Message)
@@ -353,6 +361,7 @@ async def get_conversation_partner_id_from_db(
     conversation: Optional[Conversation] = None,
     session: AsyncSession = None,
 ) -> int:
+    d_logger.debug("D_logger")
     if not conversation:
         conversation = await get_currently_active_conversation_for_user_from_db(
             user_id=user_id, session=session
@@ -372,6 +381,7 @@ async def get_conversation_partner_id_from_db(
 async def is_conversation_active(
     conversation_id: int, session: AsyncSession = None
 ) -> bool:
+    d_logger.debug("D_logger")
     try:
         # Asynchronously query the conversation by ID
         result = await session.execute(
@@ -393,6 +403,7 @@ async def is_conversation_active(
 async def set_conversation_inactive(
     conversation_id: int, session: AsyncSession = None
 ) -> None:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(
             select(Conversation).filter(Conversation.id == conversation_id)
@@ -418,11 +429,44 @@ async def set_conversation_inactive(
 async def get_new_partner_for_conversation_for_user_from_db(
     user_id: int, session: AsyncSession = None
 ) -> User | None:
-    subquery1 = select(Conversation.user1_id).filter(Conversation.user1_id == user_id)
-    subquery2 = select(Conversation.user2_id).filter(Conversation.user2_id == user_id)
-    subquery = subquery1.union(subquery2)
+    # d_logger.debug("D_logger")
+    # subquery1 = select(Conversation.user1_id).filter(Conversation.user1_id == user_id)
+    # subquery2 = select(Conversation.user2_id).filter(Conversation.user2_id == user_id)
+    # subquery = subquery1.union(subquery2)
+
+    # try:
+    #     result = await session.execute(
+    #         select(User).filter(
+    #             User.is_ready_to_chat.is_(True),
+    #             User.id != user_id,
+    #             ~User.id.in_(subquery),
+    #         )
+    #     )
+    #     potential_partners = result.scalars().all()
+
+    #     if potential_partners:
+    #         partner = random.choice(potential_partners)
+    #         return partner
+    #     else:
+    #         return None
+    # except SQLAlchemyError as e:
+    #     await logger.error(
+    #         msg=f"SQLAlchemy error getting new partner for conversation: {e}",
+    #         chat_id=user_id,
+    #     )
+    #     raise e
+    # except Exception as e:
+    #     await logger.error(
+    #         msg=f"Error getting new partner for conversation: {e}", chat_id=user_id
+    #     )
+    #     raise e
+    d_logger.debug("D_logger")
+    # Query to find all user IDs with whom the current user has had a conversation
+    subquery = select(Conversation.user2_id).where(Conversation.user1_id == user_id)
+    subquery = subquery.union(select(Conversation.user1_id).where(Conversation.user2_id == user_id))
 
     try:
+        # Get all users who are ready to chat and have not had a conversation with the current user
         result = await session.execute(
             select(User).filter(
                 User.is_ready_to_chat.is_(True),
@@ -454,6 +498,7 @@ async def get_new_partner_for_conversation_for_user_from_db(
 async def get_user_is_active_status_from_db(
     user_id: int, session: AsyncSession = None
 ) -> bool:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(select(User).filter(User.id == user_id))
         user = result.scalars().first()
@@ -469,6 +514,7 @@ async def get_user_is_active_status_from_db(
 async def set_user_profile_version_in_db(
     user_id: int, profile_version: int, session: AsyncSession = None
 ) -> bool:
+    d_logger.debug("D_logger")
     try:
         # Asynchronously get the user by ID
         result = await session.execute(select(User).filter(User.id == user_id))
@@ -504,6 +550,7 @@ async def create_new_conversation_for_users_in_db(
     partner_profile_version: int,
     session: AsyncSession = None,
 ) -> Conversation | None:
+    d_logger.debug("D_logger")
     try:
         # Create a new Conversation instance
         conversation = Conversation(
@@ -534,6 +581,7 @@ async def get_tiered_profile_message_from_db(
     profile_version: int = -1,
     session: AsyncSession = None,
 ) -> Message:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(
             select(Message)
@@ -556,6 +604,7 @@ async def get_tiered_profile_message_from_db(
 
 @manage_db_session
 async def save_user_to_db(user: User = None, session: AsyncSession = None) -> bool:
+    d_logger.debug("D_logger")
     try:
         session.add(user)
         await session.commit()
@@ -567,6 +616,7 @@ async def save_user_to_db(user: User = None, session: AsyncSession = None) -> bo
 
 @manage_db_session
 async def get_user_from_db(user_id: int = -1, session: AsyncSession = None) -> User:
+    d_logger.debug("D_logger")
     try:
         stmt = select(User).where(User.id == user_id)
         result = await session.execute(stmt)
@@ -581,6 +631,7 @@ async def get_user_from_db(user_id: int = -1, session: AsyncSession = None) -> U
 async def set_is_active_flag_for_user_in_db(
     user_id: int, is_active: bool, session: AsyncSession
 ) -> bool:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(select(User).filter(User.id == user_id))
         user = result.scalars().first()
@@ -599,6 +650,7 @@ async def set_is_active_flag_for_user_in_db(
 async def set_is_ready_to_chat_flag_for_user_in_db(
     user_id: int, is_ready_to_chat: bool, session: AsyncSession = None
 ) -> bool:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(select(User).filter(User.id == user_id))
         user = result.scalars().first()
@@ -628,6 +680,7 @@ async def set_is_ready_to_chat_flag_for_user_in_db(
 
 @manage_db_session
 async def mark_user_as_inactive_in_db(user_id: int, session: AsyncSession) -> bool:
+    d_logger.debug("D_logger")
     user = await get_user_from_db(user_id)
     if not user:
         return False
@@ -642,6 +695,7 @@ async def mark_user_as_inactive_in_db(user_id: int, session: AsyncSession) -> bo
 
 @manage_db_session
 async def delete_user_profile_from_db(user_id: int, session: AsyncSession) -> bool:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(select(User).filter_by(id=user_id))
         user_profile = result.scalars().first()
@@ -662,6 +716,7 @@ async def delete_user_profile_from_db(user_id: int, session: AsyncSession) -> bo
 async def get_max_profile_version_of_user_from_db(
     user_id: int, session: AsyncSession = None
 ) -> int:
+    d_logger.debug("D_logger")
     try:
         max_user1_profile_version_stmt = select(
             func.max(Conversation.user1_profile_version)
@@ -701,6 +756,7 @@ async def get_max_profile_version_of_user_from_db(
 async def save_file_and_store_path_in_db(
     file_id: str, file_type: str, session: AsyncSession
 ) -> str:
+    d_logger.debug("D_logger")
     try:
         # Get the file path from Telegram
         file = get_telegram_file(file_id=file_id)
@@ -732,6 +788,7 @@ async def set_telegram_ids_for_stored_message(
     tg_message_id_for_sender: int = None,
     session: AsyncSession = None,
 ) -> bool:
+    d_logger.debug("D_logger")
     try:
         result = await session.execute(select(Message).filter(Message.id == message_id))
         message =  result.scalars().first()

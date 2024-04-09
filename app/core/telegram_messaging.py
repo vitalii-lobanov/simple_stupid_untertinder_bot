@@ -10,6 +10,7 @@ from database.engine import get_session
 # from app.tasks.tasks import celery_app
 from models import Message
 from utils.debug import logger
+from utils.d_debug import d_logger
 import bleach
 from database.engine import manage_db_session
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,7 +27,7 @@ async def send_reconstructed_telegram_message_to_user(
     message: Message = None, 
     user_id: int = -1
 ) -> None:
-    
+    d_logger.debug("D_logger")
     caption = None
 
     if message is not None:
@@ -142,6 +143,7 @@ async def send_reconstructed_telegram_message_to_user(
 
 async def send_service_message(message: str, state: FSMContext = None, chat_id: int = None
 ) -> None:
+    d_logger.debug("D_logger")
     if state is not None:
         tg_chat_id = state.key.chat_id
     elif chat_id is not None:
@@ -161,15 +163,18 @@ async def send_tiered_partner_s_message_to_user(
     tier: int = -1,
     session: AsyncSession = None,
 ) -> None:
+   
     try:        
         current_partner_profile_version = await get_max_profile_version_of_user_from_db(
             user_id=partner_id
         )
-        #TODO: WTF? How id related to current_partner_profile_version???
-        if current_partner_profile_version == 0:
-            id = user_id            
-        else:
-            id = partner_id
+        # #TODO: WTF? How id related to current_partner_profile_version???
+        # if current_partner_profile_version == 0:
+        #     id = user_id            
+        # else:
+        #     id = partner_id
+
+        id = partner_id
         profile_version = current_partner_profile_version
         
         tiered_message = await get_tiered_profile_message_from_db(
@@ -180,7 +185,7 @@ async def send_tiered_partner_s_message_to_user(
         )
 
         await send_reconstructed_telegram_message_to_user(
-            message=tiered_message, user_id=partner_id
+            message=tiered_message, user_id=user_id
         )
     except Exception as e:
         logger.sync_error(msg=f"Error sending tiered profile message: {e}")

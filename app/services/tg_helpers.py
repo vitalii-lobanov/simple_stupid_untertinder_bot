@@ -6,9 +6,11 @@ import uuid
 from aiogram.exceptions import TelegramBadRequest
 from utils.text_messages import message_file_is_too_large_use_files_less_20_MB
 from utils.debug import logger
+from utils.d_debug import d_logger
 #from core.telegram_messaging import send_service_message
 
 async def get_telegram_file(file_id: str) -> File:
+    d_logger.debug("D_logger")
     try:
         file = await bot_instance.get_file(file_id)
         #return File(path=file.file_path)
@@ -19,6 +21,7 @@ async def get_telegram_file(file_id: str) -> File:
     
 
 async def download_telegram_file(file_id: str = None, chat_id: int = None) -> str:
+    d_logger.debug("D_logger")
     try:
         file = await get_telegram_file(file_id=file_id) 
         file_path = file.file_path

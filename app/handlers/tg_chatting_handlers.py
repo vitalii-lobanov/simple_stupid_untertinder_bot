@@ -39,6 +39,7 @@ from services.emoji_rank import EmojiRank
 from services.score_tiers import profile_disclosure_tiers_score_levels
 from sqlalchemy.exc import SQLAlchemyError
 from utils.debug import logger
+from utils.d_debug import d_logger
 from utils.text_messages import (
     message_a_conversation_partner_found,
     message_no_partners_ready_to_chat_available_we_will_inform_you_later,
@@ -48,6 +49,7 @@ from utils.text_messages import (
     message_you_should_not_react_your_own_messages,
     message_you_reacted_messge_from_another_conversation,
     message_below_all_the_text_is_from_chat_partner,
+    message_your_next_tier_was_hown_to_the_partner, message_your_full_profile_was_hown_to_the_partner
 )
 
 
@@ -55,12 +57,14 @@ async def __set_disclosure_level__(
     state: FSMContext,
     level: int,
 ) -> None:
+    d_logger.debug("D_logger")
     await state.update_data(disclosure_level=level)
 
 
 async def __get_disclosure_level__(
     state: FSMContext,
 ) -> int:
+    d_logger.debug("D_logger")
     disclosure_level_data = await state.get_data()
     disclosure_level: int = disclosure_level_data["disclosure_level"]
     return disclosure_level
@@ -70,6 +74,7 @@ async def __get_disclosure_level__(
 
 
 async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     
     if not await check_user_state(
         user_id=user_id, state=UserStates.ready_to_chat
@@ -164,6 +169,7 @@ async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> Non
 async def state_user_is_in_chatting_progress_handler(
     message: types.Message, state: FSMContext
 ) -> None:
+    d_logger.debug("D_logger")
     user_id = message.from_user.id
     if not await check_user_state(
         user_id=user_id, state=UserStates.chatting_in_progress
@@ -210,6 +216,7 @@ async def state_user_is_in_chatting_progress_handler(
 
 
 async def update_user_score_in_conversation(state: FSMContext, delta: float) -> int:
+    d_logger.debug("D_logger")
     score_data = await state.get_data()
     new_score = score_data["current_score"] + delta
     await state.update_data(current_score=new_score)
@@ -219,6 +226,7 @@ async def update_user_score_in_conversation(state: FSMContext, delta: float) -> 
 async def check_conversation_score_threshold(
     current_score: int, state: FSMContext, partner_id: int
 ) -> Union[int, bool]:
+    d_logger.debug("D_logger")
     current_disclosure_level = await __get_disclosure_level__(state)
     for index, tier_threshold in enumerate(
         reversed(profile_disclosure_tiers_score_levels.PROFILE_DISCLOSURE_TIER_LEVELS)
@@ -250,6 +258,7 @@ async def check_conversation_score_threshold(
 async def message_reaction_handler(
     message_reaction: types.MessageReactionUpdated, user_context: FSMContext
 ) -> None:
+    d_logger.debug("D_logger")
     user_id = message_reaction.user.id
 
     conversation = await get_currently_active_conversation_for_user_from_db(
@@ -287,6 +296,14 @@ async def message_reaction_handler(
                 message=message_you_should_not_react_your_own_messages(),
                 chat_id=user_id,
             )
+            
+            emoji = ReactionTypeEmoji(emoji="💩")
+            await bot_instance.set_message_reaction(
+                chat_id=user_id,
+                message_id=message_reaction.message_id,
+                reaction=[emoji],
+            )
+
             return
 
         message_from_db = await get_message_in_inactive_conversations_from_db(
@@ -385,14 +402,19 @@ async def message_reaction_handler(
                 # )
                 await send_service_message(
                     message=message_you_have_reached_the_next_tier(
-                        current_score=current_score, reached_tier=reached_tier
+                        current_score=current_score, reached_tier=reached_tier+1
                     ),
                     chat_id=partner_id,
                 )
 
                 # TODO: Change all the parameters everywhere for named arguments instead of positional
                 await send_tiered_partner_s_message_to_user(
-                    user_id=user_id, partner_id=partner_id, tier=reached_tier
+                    user_id=partner_id, partner_id=user_id, tier=reached_tier
+                )
+
+                await send_service_message(
+                    message=message_your_next_tier_was_hown_to_the_partner(reached_tier + 1),
+                    chat_id=user_id
                 )
 
                 if (
@@ -407,7 +429,12 @@ async def message_reaction_handler(
                     # )
 
                     await send_service_message(
-                        message=message_the_last_tier_reached(), chat_id=user_id
+                        message=message_the_last_tier_reached(), chat_id=partner_id
+                    )
+
+                    await send_service_message(
+                        message=message_your_full_profile_was_hown_to_the_partner(),
+                        chat_id=user_id
                     )
 
         else:

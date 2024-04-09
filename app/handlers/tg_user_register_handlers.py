@@ -12,6 +12,7 @@ from services.dao import (
 )
 from services.score_tiers import message_tiers_count
 from utils.debug import logger
+from utils.d_debug import d_logger
 from utils.text_messages import (
     message_now_please_send_profile_messages,
     message_profile_message_received_please_send_the_remaining,
@@ -31,6 +32,7 @@ async def create_new_registration(
     user_id: "int",
     username: "str",
 ) -> "None":
+    d_logger.debug("D_logger")
     existing_user = await get_user_from_db(user_id=user_id)
     if existing_user:
         existing_user.is_active = True
@@ -54,17 +56,20 @@ async def create_new_registration(
 async def registration_failed(
     message: types.Message, state: FSMContext, exception: Exception
 ) -> None:
+    d_logger.debug("D_logger")
     await state.set_state(CommonStates.default)
     await logger.error(
         msg=f"{message_registration_failed()} Exception: {str(exception)}", state=state
     )
 
 async def __get_registration_message_count_already_sent__(message: types.Message, state: FSMContext) -> int:
+    d_logger.debug("D_logger")
     user_data = await state.get_data()
     message_count = user_data.get("message_count", 0)
     return message_count
 
 async def increment_message_count(message: types.Message, state: FSMContext) -> int:    
+    d_logger.debug("D_logger")
     message_count = await __get_registration_message_count_already_sent__(message, state) + 1
     await state.update_data(message_count=message_count)
     return message_count
@@ -73,6 +78,7 @@ async def increment_message_count(message: types.Message, state: FSMContext) -> 
 async def check_message_threshold(
     message: types.Message, state: FSMContext, message_count: int
 ) -> None:
+    d_logger.debug("D_logger")
     if message_count < message_tiers_count.MESSAGE_TIERS_COUNT:
         await send_service_message(
             message=message_profile_message_received_please_send_the_remaining(
@@ -89,6 +95,7 @@ async def complete_registration(message: types.Message, state: FSMContext) -> No
     user_id = message.from_user.id
     user = await get_user_from_db(user_id)
     if user is not None:
+        d_logger.debug("D_logger")
         await set_is_active_flag_for_user_in_db(user_id, True)
         await send_service_message(
             message=message_your_profile_message_saved_and_profile_successfully_filled_up(),
@@ -103,7 +110,7 @@ async def complete_registration(message: types.Message, state: FSMContext) -> No
 async def ask_user_to_send_messages_to_fill_profile(
     message: types.Message, state: FSMContext
 ) -> None:
-    
+    d_logger.debug("D_logger")
     if await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
@@ -123,6 +130,7 @@ async def ask_user_to_send_messages_to_fill_profile(
 async def receiving_messages_on_registration_handler(
     message: types.Message, state: FSMContext
 ) -> None:
+    d_logger.debug("D_logger")
     if (
         state is RegistrationStates.receiving_messages
         or RegistrationStates.starting

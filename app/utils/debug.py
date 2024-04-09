@@ -24,25 +24,28 @@ async  def __send_service_message__(
     msg = bleach.clean(msg)
     await bot_instance.send_message(chat_id=tg_chat_id, text=msg, parse_mode="HTML")
    
+
+m_colored_formatter = colorlog.ColoredFormatter(
+        "%(log_color)s%(levelname)-8s%(reset)s %(white)s%(message)-90s "
+        "%(white)s%(bg_blue)s%(asctime)s | %(module)s.%(funcName)s",
+        datefmt=None,
+        reset=True,
+        log_colors={
+            "DEBUG": "cyan",
+            "INFO": "green",
+            "WARNING": "yellow",
+            "ERROR": "red",
+            "CRITICAL": "red,bg_white",
+        },
+        secondary_log_colors={},
+        style="%",
+    )
+
 class CustomColorLogger(logging.Logger):
     def __init__(self, name, level=logging.NOTSET):
         # TODO: check whether it considers the log level from the envinronment
         super().__init__(name, level)
-        colored_formatter = colorlog.ColoredFormatter(
-            "%(log_color)s%(levelname)-8s%(reset)s %(white)s%(message)-90s "
-            "%(white)s%(bg_blue)s%(asctime)s | %(module)s.%(funcName)s",
-            datefmt=None,
-            reset=True,
-            log_colors={
-                "DEBUG": "cyan",
-                "INFO": "green",
-                "WARNING": "yellow",
-                "ERROR": "red",
-                "CRITICAL": "red,bg_white",
-            },
-            secondary_log_colors={},
-            style="%",
-        )
+        colored_formatter = m_colored_formatter
 
         stream_handler = logging.StreamHandler()
         stream_handler.setFormatter(colored_formatter)
@@ -202,5 +205,11 @@ class CustomColorLogger(logging.Logger):
             **kwargs,
         )
 
-
 logger = CustomColorLogger(name="CustomLogger")
+
+
+
+
+
+
+

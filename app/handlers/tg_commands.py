@@ -33,6 +33,7 @@ from services.dao import save_telegram_message
 from core.states import is_current_state_legitimate, is_current_state_is_not_allowed
 
 from utils.debug import logger
+from utils.d_debug import d_logger
 from models.message import MessageSource
 
 from services.score_tiers import message_tiers_count
@@ -42,6 +43,7 @@ from services.score_tiers import message_tiers_count
 
 
 async def save_received_telegram_message(message: types.Message) -> bool:
+    d_logger.debug("D_logger")
     if not await get_user_from_db(user_id=message.from_user.id):
         logger.sync_debug("User is not registered, so the message was not saved")
         return False
@@ -53,6 +55,7 @@ async def save_received_telegram_message(message: types.Message) -> bool:
     
 
 async def cmd_start(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     # await save_telegram_message(message=message, message_source=MessageSource.command_received)
     await state.clear()
     await state.set_data({})
@@ -63,6 +66,7 @@ async def cmd_start(message: types.Message, state: FSMContext) -> None:
 
 
 async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     # await save_telegram_message(message=message, message_source=MessageSource.command_received)
     user_id = message.from_user.id
     if  not await  is_current_state_legitimate(
@@ -103,7 +107,7 @@ async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
         )
 
 async def cmd_register(message: types.Message, state: FSMContext) -> None:
-
+    d_logger.debug("D_logger")
     user_id = message.from_user.id
     if not await is_current_state_legitimate(
         user_id=user_id,
@@ -163,6 +167,7 @@ async def cmd_register(message: types.Message, state: FSMContext) -> None:
 
 
 async def cmd_start_chatting(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     user_id = message.from_user.id
     user = await get_user_from_db(user_id)
     if user is None:
@@ -188,8 +193,9 @@ async def cmd_start_chatting(message: types.Message, state: FSMContext) -> None:
 
 
 async def default_handler(message: types.Message, state: FSMContext) -> None:
-
+    d_logger.debug("D_logger")
     pass
 
 async def cmd_help(message: types.Message, state: FSMContext, total_message_count: int = message_tiers_count.MESSAGE_TIERS_COUNT) -> None:
+    d_logger.debug("D_logger")
     await send_service_message(message=message_help_message(total_messages_count=total_message_count), chat_id=message.from_user.id)

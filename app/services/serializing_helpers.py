@@ -1,11 +1,14 @@
 from typing import Any, Dict, List, Optional, Union
 import os
 from aiogram import types
+from utils.debug import logger
+from utils.d_debug import d_logger
 
 
 #TODO: optional as 'None' handler in function output types. 
 #TODO: find the way to more strictly type checking
 def message_poll_to_dict(poll: types.Poll) -> Optional[Dict[str, Any]]:
+    d_logger.debug("D_logger")
     if poll is not None:
         return {
             "id": poll.id,
@@ -25,6 +28,7 @@ def message_poll_to_dict(poll: types.Poll) -> Optional[Dict[str, Any]]:
         return None
 
 def get_multimedia_paths_from_message(message: types.Message) -> dict:
+    d_logger.debug("D_logger")
     return {
         "audio": message.audio.file_id if message.audio else None,
         "document": message.document.file_id if message.document else None,
@@ -36,6 +40,7 @@ def get_multimedia_paths_from_message(message: types.Message) -> dict:
 
 
 def location_to_dict(location: types.Location) -> Dict[str, float]:
+    d_logger.debug("D_logger")
     return {
         "longitude": location.longitude,
         "latitude": location.latitude,
@@ -47,6 +52,7 @@ def location_to_dict(location: types.Location) -> Dict[str, float]:
 def message_entities_to_dict(
     entities: List[types.MessageEntity],
 ) -> Optional[List[Dict[str, Union[str, int, Optional[Dict[str, Any]]]]]]:
+    d_logger.debug("D_logger")
     return (
         [
             {
@@ -67,6 +73,7 @@ def message_entities_to_dict(
 def link_preview_options_to_dict(
     link_preview_options: Optional[types.LinkPreviewOptions],
 ) -> Optional[Dict[str, Union[bool, str, None]]]:
+    d_logger.debug("D_logger")
     if link_preview_options is not None:
         is_disabled = (
             link_preview_options.is_disabled
@@ -82,6 +89,7 @@ def link_preview_options_to_dict(
     return None
 
 def extract_file_id_from_path(file_path: str) -> str:
+    d_logger.debug("D_logger")
     filename = os.path.basename(file_path)      
     file_id_parts = filename.split('_')[1:]
     file_id = '_'.join(file_id_parts)

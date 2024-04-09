@@ -34,6 +34,7 @@ from models.base import MessageSource
 from services.dao import save_telegram_message
 from services.score_tiers import message_tiers_count
 from utils.debug import logger
+from utils.d_debug import d_logger
 from handlers.tg_commands import (
     cmd_start_chatting,
     cmd_unregister,
@@ -76,7 +77,7 @@ user_router = Router()
 
 @user_router.message(Command(commands=["unregister"]))
 async def cmd_user_unregister(message: types.Message, state: FSMContext) -> None:
-    
+    d_logger.debug("D_logger")
     if not await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
@@ -102,7 +103,7 @@ async def cmd_user_unregister(message: types.Message, state: FSMContext) -> None
 # TODO: handle start command corrtectly
 @user_router.message(Command(commands=["start"]))
 async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
-
+    d_logger.debug("D_logger")
     try:
         if await state.get_state(): 
             await save_received_telegram_message(message)
@@ -137,6 +138,7 @@ async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
 # The user starts a registration process
 @user_router.message(Command(commands=["register"]))
 async def cmd_user_register_start(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     if await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
@@ -155,6 +157,7 @@ async def cmd_user_register_start(message: types.Message, state: FSMContext) -> 
 
 @user_router.message(Command(commands=["next_please"]))
 async def cmd_next_please(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     if not await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
@@ -172,6 +175,7 @@ async def cmd_next_please(message: types.Message, state: FSMContext) -> None:
 
 @user_router.message(Command(commands=["show_my_profile"]))
 async def cmd_user_show_my_profile(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     if not await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
@@ -199,6 +203,7 @@ async def cmd_user_show_my_profile(message: types.Message, state: FSMContext) ->
 
 @user_router.message(Command(commands=["start_chatting"]))
 async def cmd_user_start_chatting(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     if await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
@@ -220,6 +225,7 @@ async def cmd_user_start_chatting(message: types.Message, state: FSMContext) -> 
 
 @user_router.message(Command(commands=["help"]))
 async def cmd_user_help(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     # await save_telegram_message(
     #     message=message, message_source=MessageSource.command_received
     # )
@@ -231,6 +237,7 @@ async def cmd_user_help(message: types.Message, state: FSMContext) -> None:
 async def handle_user_receiving_messages_on_registration(
     message: types.Message, state: FSMContext
 ) -> None:
+    d_logger.debug("D_logger")
     logger.sync_debug("Handler for receiving_messages state")
     await receiving_messages_on_registration_handler(message, state)
 
@@ -239,6 +246,7 @@ async def handle_user_receiving_messages_on_registration(
 async def message_user_reaction_handler(
     message_reaction: types.MessageReactionUpdated, state: FSMContext
 ) -> None:
+    d_logger.debug("D_logger")
     logger.sync_debug("Message reaction handler...")
     await message_reaction_handler(message_reaction, state)
 
@@ -247,12 +255,14 @@ async def message_user_reaction_handler(
 async def state_user_is_in_chatting_progress(
     message: types.Message, state: FSMContext
 ) -> None:
+    d_logger.debug("D_logger")
     logger.sync_debug("We're inside state_user_is_in_chatting_progress")
     await state_user_is_in_chatting_progress_handler(message, state)
 
 
 @user_router.message()
 async def default_message_handler(message: types.Message, state: FSMContext) -> None:
+    d_logger.debug("D_logger")
     logger.sync_debug("Default message handler...")
     if not await  is_current_state_is_not_allowed(
         user_id=message.from_user.id, state=state, not_allowed_states=[CommonStates.just_started_bot]

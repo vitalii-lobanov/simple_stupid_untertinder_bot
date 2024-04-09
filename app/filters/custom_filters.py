@@ -7,6 +7,7 @@ from aiogram.fsm.state import State
 
 class InStateFilter(Filter):
     def __init__(self, state: State) -> None:
+        
         super().__init__()
         self.state = state
 

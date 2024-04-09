@@ -7,6 +7,7 @@ from core.dispatcher import dispatcher
 from database.engine import initialize_db
 from routers.user_router import user_router
 from utils.debug import logger
+from utils.d_debug import d_logger, d_logger
 
 
 logger.sync_debug("Bot token: {}".format(BOT_TOKEN))
@@ -21,9 +22,13 @@ async def main():
     # Include the router in the dispatcher
     dispatcher.include_router(user_router)
 
+    d_logger.debug("D_logger")
+
     # Start the bot
     logger.sync_debug('Initializing complete.')
     await dispatcher.start_polling(bot_instance)
+
+
 
 if __name__ == "__main__":
     asyncio.run(main())

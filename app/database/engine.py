@@ -6,6 +6,7 @@ from models.base import Base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from utils.debug import logger
+from utils.d_debug import d_logger
 from contextlib import contextmanager
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -17,7 +18,7 @@ from contextlib import asynccontextmanager
 
 if os.getenv("LOG_LEVEL") == "DEBUG":
     #TODO: change back to True
-    engine = create_async_engine(DATABASE_URI, echo=False)
+    engine = create_async_engine(DATABASE_URI, echo=True)
 else:
     engine = create_async_engine(DATABASE_URI, echo=False)
 
@@ -68,6 +69,7 @@ logger.sync_debug("Database URI: {}".format(DATABASE_URI))
 
 
 async def initialize_db() -> None:
+    d_logger.debug("D_logger")
     try:
         logger.sync_info("Initializing the database...")
         
@@ -88,6 +90,7 @@ async def initialize_db() -> None:
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 @asynccontextmanager
 async def get_session():
+    d_logger.debug("D_logger")
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -102,6 +105,7 @@ async def get_session():
 
 
 def manage_db_session(func):
+    d_logger.debug("D_logger")
     try:
         @wraps(func)    
         async def wrapper(*args, **kwargs):

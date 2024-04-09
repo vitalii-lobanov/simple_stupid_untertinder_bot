@@ -4,6 +4,7 @@ from aiogram.fsm.storage.base import StorageKey
 from core.bot import bot_instance
 from core.dispatcher import dispatcher
 from typing import Union
+from utils.d_debug import d_logger
 
 
 class RegistrationStates(StatesGroup):
@@ -27,6 +28,7 @@ class UserStates(StatesGroup):
 
 
 async def access_user_context(chat_id: int, user_id: int, bot_id: int):
+    d_logger.debug("D_logger")
     user_context = FSMContext(
         dispatcher.storage,
         StorageKey(chat_id=chat_id, user_id=user_id, bot_id=bot_id),
@@ -37,6 +39,7 @@ async def access_user_context(chat_id: int, user_id: int, bot_id: int):
 async def initialize_states_for_chatter_to_start_conversation(
     state: FSMContext,
 ) -> None:
+    d_logger.debug("D_logger")
     await state.set_state(UserStates.chatting_in_progress)
     await state.update_data(current_score=0)
     await state.update_data(message_count=0)
@@ -44,6 +47,7 @@ async def initialize_states_for_chatter_to_start_conversation(
 
 
 async def get_user_context(user_id: int) -> FSMContext:
+    d_logger.debug("D_logger")
     user_context = FSMContext(
         dispatcher.storage,
         StorageKey(chat_id=user_id, user_id=user_id, bot_id=bot_instance.id),
@@ -53,6 +57,7 @@ async def get_user_context(user_id: int) -> FSMContext:
 
 
 async def check_user_state(user_id:int = -1, state: Union[RegistrationStates, UserStates, CommonStates] = None) -> bool:
+    d_logger.debug("D_logger")
     if user_id == -1:
         raise ValueError("User id must be provided")
     if state is None:
@@ -64,6 +69,7 @@ async def check_user_state(user_id:int = -1, state: Union[RegistrationStates, Us
         return False
     
 async def is_current_state_legitimate(user_id: int, state: FSMContext, allowed_states: list[Union[RegistrationStates, UserStates, CommonStates]]) -> bool:
+    d_logger.debug("D_logger")
     for state in allowed_states:
         if state is None:
             return True
@@ -72,6 +78,7 @@ async def is_current_state_legitimate(user_id: int, state: FSMContext, allowed_s
     return False
 
 async def is_current_state_is_not_allowed(user_id: int, state: FSMContext, not_allowed_states: list[Union[RegistrationStates, UserStates, CommonStates]]) -> bool:
+    d_logger.debug("D_logger")
     for state in not_allowed_states:
         if await check_user_state(user_id=user_id, state=state):
             return True
