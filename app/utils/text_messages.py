@@ -198,4 +198,5 @@ def message_your_next_tier_was_hown_to_the_partner(tier:int):
 def message_your_full_profile_was_hown_to_the_partner():
     return "Весь ваш профиль открыт для собеседника. Механика закончилась. Вы можете продолжить общение за рамками механик бота, либо использовать /next_please, чтобы попытаться найти ещё кого-то."
 
-    
+def message_i_do_not_know_what_to_do_with_this_message(): 
+    return "Я не знаю, что делать с этим сообщением. Возможно, какая-то комбинация команд /start (попробуйте её первой, особенно если до этого не использовали), /register или /unregister вам поможет."

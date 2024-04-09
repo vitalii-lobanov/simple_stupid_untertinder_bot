@@ -61,7 +61,7 @@ async def check_user_state(user_id:int = -1, state: Union[RegistrationStates, Us
     if user_id == -1:
         raise ValueError("User id must be provided")
     if state is None:
-        raise ValueError("State must be provided")
+        return False
     user_context = await get_user_context(user_id)
     if await user_context.get_state() == state:
         return True

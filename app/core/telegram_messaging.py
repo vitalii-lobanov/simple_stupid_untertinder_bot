@@ -190,3 +190,7 @@ async def send_tiered_partner_s_message_to_user(
     except Exception as e:
         logger.sync_error(msg=f"Error sending tiered profile message: {e}")
         raise e
+
+async def reply_to_telegram_message(message: types.Message, text: str) -> None:
+    d_logger.debug("D_logger")
+    await message.reply(text)

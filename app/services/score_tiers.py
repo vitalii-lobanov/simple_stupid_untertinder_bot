@@ -3,13 +3,13 @@ from typing import Final, final
 
 @final
 class MessageTiersCount:
-    MESSAGE_TIERS_COUNT: Final[int] = 1
+    MESSAGE_TIERS_COUNT: Final[int] = 10
 
 
 @final
 class ProfileDisclosureTiersScoreLevels:
     PROFILE_DISCLOSURE_TIER_LEVELS: Final[list[float]] = [
-        10,
+        10, 20, 30, 40, 50, 60, 70, 80, 90, 100
        
     ]
 

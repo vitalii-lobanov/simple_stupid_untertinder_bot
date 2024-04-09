@@ -49,8 +49,10 @@ from utils.text_messages import (
     message_you_cannot_run_next_please_now,
     message_you_cannot_use_show_my_profile_now,
     message_you_cannot_start_chatting_now,
+    message_i_do_not_know_what_to_do_with_this_message
 )
 from core.states import is_current_state_legitimate, is_current_state_is_not_allowed
+from core.telegram_messaging import reply_to_telegram_message
 
 # bot_instance = None
 
@@ -264,6 +266,12 @@ async def state_user_is_in_chatting_progress(
 async def default_message_handler(message: types.Message, state: FSMContext) -> None:
     d_logger.debug("D_logger")
     logger.sync_debug("Default message handler...")
+    current_st = await state.get_state()
+    d_logger.debug(current_st)
+    if not current_st:
+        await reply_to_telegram_message(message=message, text=message_i_do_not_know_what_to_do_with_this_message())
+        return
+
     if not await  is_current_state_is_not_allowed(
         user_id=message.from_user.id, state=state, not_allowed_states=[CommonStates.just_started_bot]
     ):
