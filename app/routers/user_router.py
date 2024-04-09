@@ -53,7 +53,7 @@ from utils.text_messages import (
 )
 from core.states import is_current_state_legitimate, is_current_state_is_not_allowed
 from core.telegram_messaging import reply_to_telegram_message
-
+from handlers.middleware import MessageOrderingMiddleware
 # bot_instance = None
 
 # Custom filter for registration process
@@ -75,7 +75,7 @@ user_is_in_not_ready_to_chat_state_filter = InStateFilter(UserStates.not_ready_t
 
 
 user_router = Router()
-
+user_router.message.middleware(MessageOrderingMiddleware(user_router))
 
 @user_router.message(Command(commands=["unregister"]))
 async def cmd_user_unregister(message: types.Message, state: FSMContext) -> None:
