@@ -79,7 +79,7 @@ async def __get_disclosure_level__(
 async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> None:
     d_logger.debug("D_logger")
 
-    if not await check_user_state(user_id=user_id, state=UserStates.ready_to_chat):
+    if not await check_user_state(user_id=user_id, states_list=[UserStates.ready_to_chat]):
         return
 
     try:
@@ -183,7 +183,7 @@ async def state_user_is_in_chatting_progress_handler(
                 user_id=user_id, session=session, conversation=conversation
             )
             if not await check_user_state(
-                user_id=partner_id, state=UserStates.chatting_in_progress
+                user_id=partner_id, states_list=[UserStates.chatting_in_progress, UserStates.wants_to_end_chatting]
             ):
                 raise Exception(
                     f"Partner is not in state 'chatting_in_progress'. User_id: {user_id}, partner_id: {partner_id}"

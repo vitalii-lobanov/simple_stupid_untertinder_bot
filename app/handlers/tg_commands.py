@@ -78,6 +78,11 @@ async def cmd_unregister(message: types.Message, state: FSMContext) -> None:
     user_id = message.from_user.id
            
     if await mark_user_as_inactive_in_db(user_id):
+        await set_is_active_flag_for_user_in_db(user_id, False)
+        #Unregister is the same as start
+        await state.clear()
+        await state.set_data({})
+        await state.set_state(CommonStates.just_started_bot)
         await send_service_message(
             message=message_user_has_been_unregistered(), chat_id=user_id
         )

@@ -151,14 +151,14 @@ def message_you_should_not_react_your_own_messages() -> str:
 def message_you_have_reached_the_next_tier(
     current_score: int = 0, reached_tier: int = 0
 ) -> str:
-    return f"Ну что ж, собеседник оценил ваши ответы суммарно на {current_score} баллов. Теперь вам открывается новый уровень доступа к профилю вашего собеседника, используйте разумно эту возможность (№ {reached_tier}).{msg_separator}"
+    return f"Ну что ж, собеседник оценил ваши ответы суммарно на {current_score:.2f} баллов. Теперь вам открывается новый уровень доступа к профилю вашего собеседника, используйте разумно эту возможность (№ {reached_tier}).{msg_separator}"
 
 
 def message_you_are_not_in_default_state_and_cannot_register() -> str:
     return f"Вероятно, вы находитесь в процессе беседы или ещё какого-то действия. Доделайте всё, что пытаетесь сделать, завершите свои дела, пообщайтесь с близкими, раздайте долни и нажмите '/register', чтобы попробовать зарегистрироваться. Но здесь бот почти не дописан, весьма вероятно, что у вас ничего не получится.{msg_separator}"
 
 def message_you_have_already_been_registered():
-    return f"О! А вы у нас уже когда-то были! А мы заботливо хранили ваш профиль, его и будем использовать.{msg_separator}"
+    return f"О! А вы у нас уже когда-то были! А мы заботливо хранили ваш профиль, но не можем его использовать (в этой - сильно упрощённой - версии бота), поэтому создайте новый.{msg_separator}"
 
 def message_your_profile_message_saved_and_profile_successfully_filled_up():
     return f"Ага, спасибо за то, что не послали нафиг и действительно заполнили профиль. Мы правда рады. Кстати, вы можете в любой момент посмотреть, что там у вас хранится, используя команду '/show_my_profile'. А вообще — запускайте '/start_chatting', и да поможет вам Великий Рандом в выборе собеседника!{msg_separator}"
@@ -243,3 +243,6 @@ def message_message_you_trying_to_react_was_not_found():
 
 def message_your_registration_completed_stop_send_messages():
     return f"Ваша регистрация завершена. Хватит слать сообщения! Либо объявите уже́ о готовности поговорить командой /start_chatting, либо отмените регистрацию командой /unregister.{msg_separator}"
+
+def message_you_cannot_use_reactions_now(): 
+    return f"Не следует использовать реакции (лайки, дизлайки и прочее подобное) вне активной беседы. Поставиться-то они, конечно, поставятся, но толку от этого не будет.{msg_separator}"

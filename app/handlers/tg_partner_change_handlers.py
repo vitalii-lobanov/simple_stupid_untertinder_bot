@@ -47,8 +47,12 @@ async def __perform_state_clearing_on_conversation_end__(state: FSMContext) -> b
 async def __close_up_conversation__(
     message: types.Message, state: FSMContext, time_countdown: int
 ) -> bool:
-    d_logger.debug("D_logger")
+
     user_id = message.from_user.id
+
+    #DEBUG, remove it
+    curent_state=await state.get_state()
+    d_logger.debug(f"__close_up_conversation__. Current state: {curent_state}")
 
     logger.sync_debug(
         f"Closing up conversation... Timer for {time_countdown} seconds started."
@@ -95,13 +99,17 @@ async def next_please_handler(message: types.Message, state: FSMContext) -> None
     # TODO: REMOVE IT!!!!!!!!!!!!!!
     #await state.set_state(UserStates.chatting_in_progress)
 
-    if not await is_current_state_legitimate(
-        user_id=message.from_user.id,
-        state=state,
-        allowed_states=[UserStates.chatting_in_progress],
-    ):
-        await logger.info(msg=message_you_are_not_in_chatting_state(), state=state)
-        return
+    # if not await is_current_state_legitimate(
+    #     user_id=message.from_user.id,
+    #     state=state,
+    #     allowed_states=[UserStates.chatting_in_progress],
+    # ):
+    #     await logger.info(msg=message_you_are_not_in_chatting_state(), state=state)
+    #     return
+
+    #DEBUG, remove it
+    curent_state=await state.get_state()
+    d_logger.debug(f"Next_please handler. The very beginning. Current state: {curent_state}")
     
     user_id = message.from_user.id
     await send_service_message(
@@ -110,6 +118,11 @@ async def next_please_handler(message: types.Message, state: FSMContext) -> None
     )
    
     await state.set_state(UserStates.wants_to_end_chatting)
+
+
+    #DEBUG, remove it
+    curent_state=await state.get_state()
+    d_logger.debug(f"Next_please handler. User state set. Current state: {curent_state}")
 
     partner_id = await get_conversation_partner_id_from_db(user_id=user_id)
 

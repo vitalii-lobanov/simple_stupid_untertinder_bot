@@ -43,11 +43,6 @@ if __name__ == "__main__":
 
 # TODO: -> and argument types for functions
 
-# TODO: save all the messages in the database. Use all the handlers. Add saving from logger and bot_service_message | ??
-# TODO: states: default and not_ready_to_chat — choose one of them
-# TODO: handle is_ready_to_chat status for the users in the database according to states changes
-# TODO: check the starting number for the DB id's (0 or 1)
-
 # TODO: test reactions cancellation!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # TODO: profile versioning. Added profile_version field to the User, Message, Conversation, ProfileData models. Now: rewrite /register and /unregister

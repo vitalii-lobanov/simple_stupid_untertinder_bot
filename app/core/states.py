@@ -55,15 +55,16 @@ async def get_user_context(user_id: int) -> FSMContext:
 
 
 async def check_user_state(
-    user_id: int = -1, state: Union[RegistrationStates, UserStates, CommonStates] = None
+    user_id: int = -1, states_list: list[Union[RegistrationStates, UserStates, CommonStates]] = None
 ) -> bool:
     d_logger.debug("D_logger")
     if user_id == -1:
         raise ValueError("User id must be provided")
-    if state is None:
+    if states_list is None:
         return False
     user_context = await get_user_context(user_id)
-    if await user_context.get_state() == state:
+    user_state = await user_context.get_state()
+    if user_state in states_list:
         return True
     else:
         return False
@@ -78,7 +79,7 @@ async def is_current_state_legitimate(
     for state in allowed_states:
         if state is None:
             return True
-        if await check_user_state(user_id=user_id, state=state):
+        if await check_user_state(user_id=user_id, states_list=[state]):
             return True
     return False
 
@@ -90,7 +91,7 @@ async def is_current_state_is_not_allowed(
 ) -> bool:
     d_logger.debug("D_logger")
     for state in not_allowed_states:
-        if await check_user_state(user_id=user_id, state=state):
+        if await check_user_state(user_id=user_id, states_list=[state]):
             return True
     return False
 
@@ -98,8 +99,7 @@ async def is_current_state_is_not_allowed(
 start_cmd_allowed_states = [None]
 regitser_cmd_allowed_states = [
     RegistrationStates.starting,
-    CommonStates.just_started_bot,
-    RegistrationStates.completed,
+    CommonStates.just_started_bot,    
 ]
 unregister_cmd_allowed_states = [
     RegistrationStates.completed,

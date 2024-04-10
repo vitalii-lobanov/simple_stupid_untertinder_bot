@@ -53,6 +53,7 @@ from utils.text_messages import (
     message_i_do_not_know_what_to_do_with_this_message,
     message_your_message_is_bad_and_was_not_saved,
     message_your_registration_completed_stop_send_messages,
+    message_you_cannot_use_reactions_now,
 )
 from core.states import is_current_state_legitimate, is_current_state_is_not_allowed
 from core.telegram_messaging import reply_to_telegram_message
@@ -68,7 +69,7 @@ from core.states import (
     chatting_process_message_receiving_allowed_states,
     receiving_registration_profile_messages_allowed_states
 )
-from core.telegram_messaging import reply_to_telegram_message
+
 # bot_instance = None
 
 # Custom filter for registration process
@@ -77,14 +78,15 @@ from core.telegram_messaging import reply_to_telegram_message
 #     RegistrationStates.starting
 # )
 user_is_in_receiving_messages_during_registration_state_filter = InStateFilter(
-    RegistrationStates.receiving_messages
+    [RegistrationStates.receiving_messages]
 )
 user_is_in_completed_registration_state_filter = InStateFilter(
-    RegistrationStates.completed
+    [RegistrationStates.completed]
 )
 user_is_in_ready_for_chatting_state_filter = InStateFilter(UserStates.ready_to_chat)
 user_is_in_chatting_in_progress_state_filter = InStateFilter(
-    UserStates.chatting_in_progress
+    [UserStates.chatting_in_progress,
+    UserStates.wants_to_end_chatting,]
 )
 user_is_in_not_ready_to_chat_state_filter = InStateFilter(UserStates.not_ready_to_chat)
 
@@ -146,21 +148,6 @@ async def cmd_user_start(message: types.Message, state: FSMContext) -> None:
     except Exception as e:
         logger.sync_error(msg=f"Error starting user handling: {e}")
 
-
-# @user_router.message(Command(commands=['hard_unregister']))
-# async def cmd_user_hard_unregister(message: types.Message):
-#     await save_telegram_message(message=message, message_source=MessageSource.command_received)
-#     logger.sync_debug("'/hard_unregister' command received")
-#     await cmd_hard_unregister(message)
-
-
-# @user_router.message(Command(commands=['renew_profile']))
-# async def cmd_user_renew_profile(message: types.Message, state: FSMContext):
-#     await save_telegram_message(message=message, message_source=MessageSource.command_received)
-#     logger.sync_debug("'/renew_profile' command received")
-#     await cmd_renew_profile(message, state)
-
-
 # The user starts a registration process
 @user_router.message(Command(commands=["register"]))
 async def cmd_user_register_start(message: types.Message, state: FSMContext) -> None:
@@ -212,13 +199,7 @@ async def cmd_user_show_my_profile(message: types.Message, state: FSMContext) ->
     if not await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
-        # allowed_states=[
-        #     UserStates.chatting_in_progress,
-        #     UserStates.ready_to_chat,
-        #     UserStates.not_ready_to_chat,
-        #     CommonStates.default,
-        #     RegistrationStates.completed,
-        # ],
+
         allowed_states=show_my_profile_cmd_allowed_states,
     ):
         await send_service_message(
@@ -244,11 +225,7 @@ async def cmd_user_start_chatting(message: types.Message, state: FSMContext) -> 
     if await is_current_state_legitimate(
         user_id=message.from_user.id,
         state=state,
-        # allowed_states=[
-        #     UserStates.not_ready_to_chat,
-        #     CommonStates.default,
-        #     RegistrationStates.completed,
-        # ],
+
         allowed_states=start_chatting_cmd_allowed_states,
     ):
         await save_received_telegram_message(message)
@@ -299,6 +276,9 @@ async def message_user_reaction_handler(
 ) -> None:
     d_logger.debug("D_logger")
     logger.sync_debug("Message reaction handler...")
+    if not is_current_state_legitimate(user_id=message_reaction.user.id, state=state, allowed_states=chatting_process_message_receiving_allowed_states):
+       await send_service_message(message=message_you_cannot_use_reactions_now(), chat_id=message_reaction.user.id)
+       return
     await message_reaction_handler(message_reaction, state)
 
 
