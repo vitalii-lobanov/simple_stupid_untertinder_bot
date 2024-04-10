@@ -105,20 +105,20 @@ unregister_cmd_allowed_states = [
     RegistrationStates.completed,
     UserStates.not_ready_to_chat,
 ]
-show_my_profile_cmd_allowed_states = (
-    [
+show_my_profile_cmd_allowed_states = [
         UserStates.chatting_in_progress,
         UserStates.ready_to_chat,
         UserStates.not_ready_to_chat,
         RegistrationStates.completed,
-    ],
-)
+    ]
+
 
 start_chatting_cmd_allowed_states = [
     RegistrationStates.completed,
     UserStates.not_ready_to_chat,
 ]
 next_please_cmd_allowed_states = [UserStates.chatting_in_progress]
+
 help_cmd_allowed_states = [
     RegistrationStates.starting,
     RegistrationStates.receiving_messages,
@@ -130,6 +130,16 @@ help_cmd_allowed_states = [
     UserStates.chatting_in_progress,
     UserStates.wants_to_end_chatting,
     None,
+]
+
+chatting_process_message_receiving_allowed_states = [
+    UserStates.chatting_in_progress,        
+    UserStates.wants_to_end_chatting,    
+]
+
+receiving_registration_profile_messages_allowed_states = [    
+    RegistrationStates.receiving_messages,
+    RegistrationStates.starting,   
 ]
 
 

@@ -26,7 +26,8 @@ from utils.text_messages import (
     message_you_have_been_registered_successfully,
     message_you_now_ready_to_chat_please_wait_the_partner_to_connect,
     message_you_have_already_been_registered,
-    message_help_message
+    message_help_message,
+    message_your_message_is_bad_and_was_not_saved
 )
 from core.states import RegistrationStates
 from services.dao import save_telegram_message
@@ -48,9 +49,14 @@ async def save_received_telegram_message(message: types.Message) -> bool:
         logger.sync_debug("User is not registered, so the message was not saved")
         return False
     else:       
-        await save_telegram_message(
+        if not await save_telegram_message(
                 message=message, message_source=MessageSource.command_received
-            )
+            ):         
+                await send_service_message(
+                        message=message_your_message_is_bad_and_was_not_saved(),
+                        chat_id=message.from_user.id,)
+                return False
+
         return True
     
 

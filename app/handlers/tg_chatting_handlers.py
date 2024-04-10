@@ -7,9 +7,9 @@ from aiogram.types import ReactionTypeEmoji
 from core.bot import bot_instance
 from database.engine import get_session
 
+
 # from app.tasks.tasks import celery_app
 from core.states import (
-    CommonStates,
     UserStates,
     get_user_context,
     initialize_states_for_chatter_to_start_conversation,
@@ -18,8 +18,8 @@ from core.states import (
 from core.telegram_messaging import (
     send_reconstructed_telegram_message_to_user,
     send_service_message,
-    send_tiered_partner_s_message_to_user,
 )
+from services.tiered_messages import send_tiered_partner_s_message_to_user
 from models.message import MessageSource
 from services.dao import (
     create_new_conversation_for_users_in_db,
@@ -27,12 +27,12 @@ from services.dao import (
     get_currently_active_conversation_for_user_from_db,
     get_max_profile_version_of_user_from_db,
     get_message_for_given_conversation_from_db_by_sender_id,
-    get_message_in_inactive_conversations_from_db,
     get_new_partner_for_conversation_for_user_from_db,
     save_telegram_message,
     save_telegram_reaction,
     set_is_ready_to_chat_flag_for_user_in_db,
     set_telegram_ids_for_stored_message,
+    get_message_in_inactive_conversations_from_db,
     get_message_for_given_conversation_from_db_by_receiver_id,
 )
 from services.emoji_rank import EmojiRank
@@ -46,12 +46,15 @@ from utils.text_messages import (
     message_the_last_tier_reached,
     message_you_have_reached_the_next_tier,
     message_you_now_connected_to_the_conversation_partner,
-    message_you_should_not_react_your_own_messages,
-    message_you_reacted_messge_from_another_conversation,
     message_below_all_the_text_is_from_chat_partner,
-    message_your_next_tier_was_hown_to_the_partner, message_your_full_profile_was_hown_to_the_partner
+    message_your_next_tier_was_hown_to_the_partner,
+    message_your_full_profile_was_hown_to_the_partner,
+    message_your_message_is_bad_and_was_not_saved,
+    message_message_you_trying_to_react_was_not_found,
+    message_you_should_not_react_your_own_messages, 
+    message_you_reacted_messge_from_another_conversation
 )
-
+from core.states import is_current_state_legitimate, chatting_process_message_receiving_allowed_states
 
 async def __set_disclosure_level__(
     state: FSMContext,
@@ -75,12 +78,10 @@ async def __get_disclosure_level__(
 
 async def one_more_user_is_ready_to_chat(user_id: int, state: FSMContext) -> None:
     d_logger.debug("D_logger")
-    
-    if not await check_user_state(
-        user_id=user_id, state=UserStates.ready_to_chat
-    ):
+
+    if not await check_user_state(user_id=user_id, state=UserStates.ready_to_chat):
         return
-    
+
     try:
         async with get_session() as session:
             partner = await get_new_partner_for_conversation_for_user_from_db(
@@ -170,11 +171,9 @@ async def state_user_is_in_chatting_progress_handler(
     message: types.Message, state: FSMContext
 ) -> None:
     d_logger.debug("D_logger")
-    user_id = message.from_user.id
-    if not await check_user_state(
-        user_id=user_id, state=UserStates.chatting_in_progress
-    ):
-        return
+    user_id = message.from_user.id    
+
+    
     async with get_session() as session:
         conversation = await get_currently_active_conversation_for_user_from_db(
             user_id=user_id, session=session
@@ -196,14 +195,29 @@ async def state_user_is_in_chatting_progress_handler(
                     message_source=MessageSource.conversation,
                     conversation_id=conversation.id,
                 )
+
+                if not reconstructed_message:
+                    await send_service_message(
+                        message=message_your_message_is_bad_and_was_not_saved(),
+                        chat_id=message.from_user.id,
+                    )
+                    return
+
                 # We do not know the message id in Telegram before actuall sending it
                 sent_message = await send_reconstructed_telegram_message_to_user(
                     message=reconstructed_message, user_id=partner_id
                 )
                 # Now, store the message id in the database to find the message later
+
+                # Rounded videos and Audio messages are lists
+                try:
+                    sent_message_id = sent_message.message_id
+                except Exception as e:
+                    sent_message_id = sent_message[0].message_id
+
                 await set_telegram_ids_for_stored_message(
                     message_id=reconstructed_message.id,
-                    tg_message_id_for_sender=sent_message.message_id,
+                    tg_message_id_for_sender=sent_message_id,
                 )
             else:
                 await logger.error(
@@ -278,17 +292,18 @@ async def message_reaction_handler(
         message_id=message_reaction.message_id, conversation_id=conversation.id
     )
     if message_from_db is None:
-        # Seems the user tries to react to his/her own message
+    # Seems the user tries to react to his/her own message
         message_from_db = (
             await get_message_for_given_conversation_from_db_by_receiver_id(
                 message_id=message_reaction.message_id, conversation_id=conversation.id
             )
         )
         if not message_from_db:
-            logger.sync_error(
-                msg="Failed to find the message in the database / message_reaction_handler",                
+            await send_service_message(
+                message=message_message_you_trying_to_react_was_not_found(),
+                chat_id=message_reaction.user.id,
             )
-            raise RuntimeError("Failed to find the message in the database! Something went wrong")
+            return
         message_sender = message_from_db.sender_in_conversation_id
         if user_id == message_sender:
             # TODO: add more user messages text for this (i.e. narcissism)
@@ -297,7 +312,7 @@ async def message_reaction_handler(
                 chat_id=user_id,
             )
             
-            emoji = ReactionTypeEmoji(emoji="💩")
+            emoji = ReactionTypeEmoji(emoji="😐")
             await bot_instance.set_message_reaction(
                 chat_id=user_id,
                 message_id=message_reaction.message_id,
@@ -305,33 +320,19 @@ async def message_reaction_handler(
             )
 
             return
-
-        message_from_db = await get_message_in_inactive_conversations_from_db(
-            message_id=message_reaction.message_id
-        )
-
-        # This should not happen! The conversation here shouldn't be closed yet
-        if message_from_db is not None:
+        else:             
             await send_service_message(
-                message=message_you_reacted_messge_from_another_conversation(),
-                chat_id=user_id,
+                message=message_message_you_trying_to_react_was_not_found(),
+                chat_id=message_reaction.user.id,
             )
-            await logger.error(
-                msg="It seems the user reacted the message in an inactive conversation",
-                state=user_context,
-            )
-            return
-        else:
-            await logger.error(
-                msg="Failed to find the message in the database / message_reaction_handler",
-                state=user_context,
-            )
-
-            raise SQLAlchemyError("Failed to find the message in the database")
+        return
 
     # Users should not react to their own messages
     message_sender = message_from_db.sender_in_conversation_id
 
+    
+    
+    
     if message_sender is None:
         await logger.error(
             msg="Failed to find the message sender in the database for the message was reacted.",
@@ -402,7 +403,7 @@ async def message_reaction_handler(
                 # )
                 await send_service_message(
                     message=message_you_have_reached_the_next_tier(
-                        current_score=current_score, reached_tier=reached_tier+1
+                        current_score=current_score, reached_tier=reached_tier + 1
                     ),
                     chat_id=partner_id,
                 )
@@ -413,8 +414,10 @@ async def message_reaction_handler(
                 )
 
                 await send_service_message(
-                    message=message_your_next_tier_was_hown_to_the_partner(reached_tier + 1),
-                    chat_id=user_id
+                    message=message_your_next_tier_was_hown_to_the_partner(
+                        reached_tier + 1
+                    ),
+                    chat_id=user_id,
                 )
 
                 if (
@@ -434,7 +437,7 @@ async def message_reaction_handler(
 
                     await send_service_message(
                         message=message_your_full_profile_was_hown_to_the_partner(),
-                        chat_id=user_id
+                        chat_id=user_id,
                     )
 
         else:

@@ -6,6 +6,8 @@ from functools import wraps
 from typing import Any, Dict, List, Optional, Union
 
 from aiogram import Bot, types
+from core.telegram_messaging import send_service_message
+from utils.text_messages import message_your_message_is_bad_and_was_not_saved
 from config import BOT_TOKEN, DOWNLOAD_PATH
 from database.engine import get_session, manage_db_session
 from models import Conversation, ProfileData
@@ -180,7 +182,11 @@ async def save_tiered_registration_message(
             await logger.error(
                 msg=f"Failed to save profile data message: {message}", chat_id=user_id
             )
+            await send_service_message(
+                        message=message_your_message_is_bad_and_was_not_saved(),
+                        chat_id=message.from_user.id,)
             return False
+            
 
 
 @manage_db_session
@@ -254,7 +260,7 @@ async def get_message_for_given_conversation_from_db_by_receiver_id(
         await logger.error(
             msg=f"Failed to retrieve message: {e}", chat_id=None
         )  # TODO: Replace None with actual chat_id if available
-        raise e
+        return None
 
 
 

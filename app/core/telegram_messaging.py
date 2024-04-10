@@ -12,17 +12,24 @@ from models import Message
 from utils.debug import logger
 from utils.d_debug import d_logger
 import bleach
-from database.engine import manage_db_session
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from helpers.serializing_helpers import extract_file_id_from_path
 from utils.text_messages import message_this_message_is_forwarded
-from services.dao import (
-    get_tiered_profile_message_from_db,
-    get_max_profile_version_of_user_from_db,
-)
 from helpers.serializing_helpers import message_entities_to_dict
 
-
+from utils.text_messages import message_media_group_not_supported
+async def check_message_is_part_of_mediagroup_and_notify_user(message: types.Message) -> bool:
+    if message.media_group_id:
+        await bot_instance.delete_message(message.chat.id, message.message_id)
+        await send_service_message(
+            message=message_media_group_not_supported(),
+            chat_id=message.chat.id,
+        )
+        return True
+    else:
+        return False
+    
 async def send_reconstructed_telegram_message_to_user(
     message: Message = None, 
     user_id: int = -1
@@ -154,42 +161,6 @@ async def send_service_message(message: str, state: FSMContext = None, chat_id: 
     msg = f"{message_this_is_bot_message()}{message}"
     msg = bleach.clean(msg)
     await bot_instance.send_message(chat_id=tg_chat_id, text=msg, parse_mode="HTML")
-
-
-@manage_db_session
-async def send_tiered_partner_s_message_to_user(        
-    user_id: int = 0,
-    partner_id: int = 0,
-    tier: int = -1,
-    session: AsyncSession = None,
-) -> None:
-   
-    try:        
-        current_partner_profile_version = await get_max_profile_version_of_user_from_db(
-            user_id=partner_id
-        )
-        # #TODO: WTF? How id related to current_partner_profile_version???
-        # if current_partner_profile_version == 0:
-        #     id = user_id            
-        # else:
-        #     id = partner_id
-
-        id = partner_id
-        profile_version = current_partner_profile_version
-        
-        tiered_message = await get_tiered_profile_message_from_db(
-            session=session,
-            user_id=id,
-            tier=tier,
-            profile_version=profile_version,            
-        )
-
-        await send_reconstructed_telegram_message_to_user(
-            message=tiered_message, user_id=user_id
-        )
-    except Exception as e:
-        logger.sync_error(msg=f"Error sending tiered profile message: {e}")
-        raise e
 
 async def reply_to_telegram_message(message: types.Message, text: str) -> None:
     d_logger.debug("D_logger")

@@ -7,6 +7,9 @@ from aiogram.exceptions import TelegramBadRequest
 from utils.text_messages import message_file_is_too_large_use_files_less_20_MB
 from utils.debug import logger
 from utils.d_debug import d_logger
+from aiogram import types
+
+
 #from core.telegram_messaging import send_service_message
 
 async def get_telegram_file(file_id: str) -> File:
@@ -36,5 +39,5 @@ async def download_telegram_file(file_id: str = None, chat_id: int = None) -> st
     except Exception as e:
         logger.sync_error(msg=f"Error downloading file: {e}")
         return None
-        
-        
+
+

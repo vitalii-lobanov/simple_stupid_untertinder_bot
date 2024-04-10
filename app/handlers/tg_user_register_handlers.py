@@ -20,7 +20,7 @@ from utils.text_messages import (
     message_your_profile_message_saved_and_profile_successfully_filled_up,
     message_your_message_is_bad_and_was_not_saved,
 )
-from core.states import is_current_state_is_not_allowed, is_current_state_legitimate
+from core.states import is_current_state_is_not_allowed, is_current_state_legitimate, receiving_registration_profile_messages_allowed_states
 
 # from app.tasks.tasks import celery_app
 
@@ -131,26 +131,17 @@ async def receiving_messages_on_registration_handler(
     message: types.Message, state: FSMContext
 ) -> None:
     d_logger.debug("D_logger")
-    if (
-        state is RegistrationStates.receiving_messages
-        or RegistrationStates.starting
-        or RegistrationStates.completed
-    ):
-        user_profile_version = await get_max_profile_version_of_user_from_db(
-            user_id=message.from_user.id
-        )
         
-        message_count = await __get_registration_message_count_already_sent__(message, state)
-        if not await save_tiered_registration_message(message=message, message_count=message_count, profile_version = user_profile_version):
-            await send_service_message(
-                message=message_your_message_is_bad_and_was_not_saved(),
-                chat_id=message.from_user.id,
-            )
-        else:    
-            message_count = await increment_message_count(message, state)
-            await check_message_threshold(message, state, message_count)
-    else:
-        await logger.error(
-            msg=f"Unexpected state encountered while receiving messages on registration: {state}",
-            state=state,
+    user_profile_version = await get_max_profile_version_of_user_from_db(
+        user_id=message.from_user.id
+    )
+    
+    message_count = await __get_registration_message_count_already_sent__(message, state)
+    if not await save_tiered_registration_message(message=message, message_count=message_count, profile_version = user_profile_version):
+        await send_service_message(
+            message=message_your_message_is_bad_and_was_not_saved(),
+            chat_id=message.from_user.id,
         )
+    else:    
+        message_count = await increment_message_count(message, state)
+        await check_message_threshold(message, state, message_count)
