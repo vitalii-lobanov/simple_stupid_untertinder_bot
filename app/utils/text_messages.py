@@ -32,7 +32,7 @@ def format_duration(seconds_count):
 
 
 
-msg_separator = "\n\n☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ ☠️ \n"
+msg_separator = "\n\n☠️ 🍄 ☠️ 🍄 ☠️ 🍄 ☠️ 🍄 ☠️ 🍄 ☠️ 🍄 ☠️ 🍄 ☠️ 🍄 ☠️ \n"
 next_please_waiting_timeout_formatted = format_duration(NEXT_PLEASE_WAITING_TIMEOUT)
 
 
@@ -151,7 +151,7 @@ def message_you_should_not_react_your_own_messages() -> str:
 def message_you_have_reached_the_next_tier(
     current_score: int = 0, reached_tier: int = 0
 ) -> str:
-    return f"Ну что ж, собеседник оценил ваши ответы суммарно на {current_score:.2f} баллов. Теперь вам открывается новый уровень доступа к профилю вашего собеседника, используйте разумно эту возможность (№ {reached_tier}).{msg_separator}"
+    return f"Ну что ж, собеседник оценил ваши ответы суммарно на {current_score:.2f} баллов. Теперь вам открывается новый уровень доступа к профилю вашего собеседника, используйте разумно эту возможность (№ {reached_tier}).{msg_separator}\n\n👇"
 
 
 def message_you_are_not_in_default_state_and_cannot_register() -> str:
