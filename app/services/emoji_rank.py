@@ -400,8 +400,7 @@ ranker = EmojiRank()
 
 
 
-
-# # Assuming `ranker` is an instance of EmojiRank and `get_rank` returns the rank for an emoji
+# # For the testing purposes
 # emoji_rankings = [(emoji, ranker.get_rank(emoji)) for emoji in full_emoji_set]
 # sorted_emoji_rankings = sorted(emoji_rankings, key=lambda x: x[1])  # Sort by rank
 

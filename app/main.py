@@ -12,7 +12,7 @@ from utils.d_debug import d_logger, d_logger
 
 
 logger.sync_debug("Bot token: {}".format(BOT_TOKEN))
-logger.sync_debug("Redis URL: {}".format(REDIS_URL))
+logger.sync_debug("Redis URL: {}".format(REDIS_URL))    
 
 
 async def main():

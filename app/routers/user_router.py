@@ -274,9 +274,10 @@ async def handle_user_receiving_messages_on_registration(
 async def message_user_reaction_handler(
     message_reaction: types.MessageReactionUpdated, state: FSMContext
 ) -> None:
-    d_logger.debug("D_logger")
+    current_state = await state.get_state()
+    d_logger.debug(f"Message reaction handler. Current state: {current_state}")
     logger.sync_debug("Message reaction handler...")
-    if not is_current_state_legitimate(user_id=message_reaction.user.id, state=state, allowed_states=chatting_process_message_receiving_allowed_states):
+    if not await is_current_state_legitimate(user_id=message_reaction.user.id, state=state, allowed_states=chatting_process_message_receiving_allowed_states):
        await send_service_message(message=message_you_cannot_use_reactions_now(), chat_id=message_reaction.user.id)
        return
     await message_reaction_handler(message_reaction, state)
@@ -288,7 +289,7 @@ async def state_user_is_in_chatting_progress(
 ) -> None:
     d_logger.debug("D_logger")
     logger.sync_debug("We're inside state_user_is_in_chatting_progress")
-    if not is_current_state_legitimate(user_id=message.from_user.id, state=state, allowed_states=chatting_process_message_receiving_allowed_states):
+    if not await is_current_state_legitimate(user_id=message.from_user.id, state=state, allowed_states=chatting_process_message_receiving_allowed_states):
        return
 
     if await check_message_is_part_of_mediagroup_and_notify_user(message=message):

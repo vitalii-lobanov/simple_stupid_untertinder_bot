@@ -60,7 +60,7 @@ async def __close_up_conversation__(
     await pause(time_countdown)
     logger.sync_debug("Timer ended")
 
-    if not __perform_state_clearing_on_conversation_end__(state=state):
+    if not await __perform_state_clearing_on_conversation_end__(state=state):
         await logger.info(msg=message_you_are_not_in_chatting_state, chat_id=user_id)
         return False
 
