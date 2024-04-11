@@ -1,0 +1,8 @@
+aiogram>=3.4.1
+aioredis>=2.0.1
+asyncpg>=0.29.0
+bleach>=6.1.0
+colorlog>=6.8.2
+numpy>=1.26.4
+scipy>=1.13.0
+SQLAlchemy>=2.0.28

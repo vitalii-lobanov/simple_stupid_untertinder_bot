@@ -1,0 +1,126 @@
+[36mDEBUG   [0m [37mDatabase URI: postgresql+asyncpg://pgsql_user:mb3L*nYTg7C!eBMC@localhost:5432/dating_bot_database [37m[44m2024-04-11 01:52:21,050 | <frozen importlib._call_with_frames_removed[0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,053 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+engine.manage_db_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,054 [0m
+[36mDEBUG   [0m [37mBot token: 6910899160:AAEABnf-OSCV3mA04uNYeYRcJ9_PD69ufZ0                                  [37m[44m2024-04-11 01:52:21,827 | main.<module>[0m
+[36mDEBUG   [0m [37mRedis URL: redis://localhost:6379/0                                                        [37m[44m2024-04-11 01:52:21,827 | main.<module>[0m
+engine.initialize_db ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,827 [0m
+[32mINFO    [0m [37mInitializing the database...                                                               [37m[44m2024-04-11 01:52:21,827 | main.main[0m
+[32mINFO    [0m [37mModels imported successfully.                                                              [37m[44m2024-04-11 01:52:21,827 | main.main[0m
+[32mINFO    [0m [37mCreating tables...                                                                         [37m[44m2024-04-11 01:52:21,827 | main.main[0m
+2024-04-11 01:52:21,845 INFO sqlalchemy.engine.Engine select pg_catalog.version()
+2024-04-11 01:52:21,845 INFO sqlalchemy.engine.Engine [raw sql] ()
+2024-04-11 01:52:21,846 INFO sqlalchemy.engine.Engine select current_schema()
+2024-04-11 01:52:21,847 INFO sqlalchemy.engine.Engine [raw sql] ()
+2024-04-11 01:52:21,848 INFO sqlalchemy.engine.Engine show standard_conforming_strings
+2024-04-11 01:52:21,848 INFO sqlalchemy.engine.Engine [raw sql] ()
+2024-04-11 01:52:21,851 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2024-04-11 01:52:21,852 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2024-04-11 01:52:21,852 INFO sqlalchemy.engine.Engine [generated in 0.00012s] ('profile_data', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2024-04-11 01:52:21,865 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2024-04-11 01:52:21,865 INFO sqlalchemy.engine.Engine [cached since 0.01279s ago] ('messages', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2024-04-11 01:52:21,865 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2024-04-11 01:52:21,867 INFO sqlalchemy.engine.Engine [cached since 0.01446s ago] ('users', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2024-04-11 01:52:21,867 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2024-04-11 01:52:21,867 INFO sqlalchemy.engine.Engine [cached since 0.01508s ago] ('conversations', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2024-04-11 01:52:21,868 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_class.relname 
+FROM pg_catalog.pg_class JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_class.relnamespace 
+WHERE pg_catalog.pg_class.relname = $1::VARCHAR AND pg_catalog.pg_class.relkind = ANY (ARRAY[$2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR]) AND pg_catalog.pg_table_is_visible(pg_catalog.pg_class.oid) AND pg_catalog.pg_namespace.nspname != $7::VARCHAR
+2024-04-11 01:52:21,868 INFO sqlalchemy.engine.Engine [cached since 0.01546s ago] ('reactions', 'r', 'p', 'f', 'v', 'm', 'pg_catalog')
+2024-04-11 01:52:21,869 INFO sqlalchemy.engine.Engine SELECT pg_catalog.pg_type.typname 
+FROM pg_catalog.pg_type JOIN pg_catalog.pg_namespace ON pg_catalog.pg_namespace.oid = pg_catalog.pg_type.typnamespace 
+WHERE pg_catalog.pg_type.typname = $1::VARCHAR AND pg_catalog.pg_type_is_visible(pg_catalog.pg_type.oid) AND pg_catalog.pg_namespace.nspname != $2::VARCHAR
+2024-04-11 01:52:21,869 INFO sqlalchemy.engine.Engine [generated in 0.00009s] ('messagesource', 'pg_catalog')
+2024-04-11 01:52:21,870 INFO sqlalchemy.engine.Engine COMMIT
+[32mINFO    [0m [37mAll tables created successfully.                                                           [37m[44m2024-04-11 01:52:21,870 | main.main[0m
+[36mDEBUG   [0m [37mDatabase initialized successfully.                                                         [37m[44m2024-04-11 01:52:21,870 | events._run[0m
+main.main ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:21,870 [0m
+[36mDEBUG   [0m [37mInitializing complete.                                                                     [37m[44m2024-04-11 01:52:21,870 | events._run[0m
+middleware.__call__ ||| [36mDEBUG   [0m [37mProcess message 15857 with text dфывфыв [37m[44m2024-04-11 01:52:45,325 [0m
+user_router.state_user_is_in_chatting_progress ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,326 [0m
+[36mDEBUG   [0m [37mWe're inside state_user_is_in_chatting_progress                                            [37m[44m2024-04-11 01:52:45,327 | handler.call[0m
+states.is_current_state_legitimate ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,327 [0m
+states.check_user_state ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,327 [0m
+states.get_user_context ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,327 [0m
+tg_chatting_handlers.state_user_is_in_chatting_progress_handler ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,328 [0m
+engine.get_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,328 [0m
+dao.get_currently_active_conversation_for_user_from_db ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,328 [0m
+2024-04-11 01:52:45,330 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2024-04-11 01:52:45,385 INFO sqlalchemy.engine.Engine SELECT conversations.id, conversations.user1_id, conversations.user1_profile_version, conversations.user2_id, conversations.user2_profile_version, conversations.start_time, conversations.end_time, conversations.is_active 
+FROM conversations 
+WHERE (conversations.user1_id = $1::BIGINT OR conversations.user2_id = $2::BIGINT) AND conversations.is_active IS true
+2024-04-11 01:52:45,385 INFO sqlalchemy.engine.Engine [generated in 0.00034s] (195576285, 195576285)
+dao.get_conversation_partner_id_from_db ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,389 [0m
+states.check_user_state ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,389 [0m
+states.get_user_context ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,389 [0m
+engine.get_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,389 [0m
+dao.save_telegram_message ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,389 [0m
+serializing_helpers.get_multimedia_paths_from_message ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,389 [0m
+2024-04-11 01:52:45,412 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2024-04-11 01:52:45,414 INFO sqlalchemy.engine.Engine INSERT INTO messages (user_id, tg_message_id_for_receiver, tg_message_id_for_sender, message_source, conversation_id, text, user_profile_version, timestamp, tier, audio, video, sticker, voice, video_note, from_user, animation, image, photo, document, author_signature, caption, caption_entities, contact, forward_date, dice, entities, game, html_text, invoice, location, link_preview_options, md_text, media_group_id, poll, quote, story, original_sender_id, original_sender_username, sender_in_conversation_id) VALUES ($1::BIGINT, $2::INTEGER, $3::INTEGER, $4::messagesource, $5::INTEGER, $6::VARCHAR, $7::INTEGER, $8::TIMESTAMP WITHOUT TIME ZONE, $9::INTEGER, $10::VARCHAR, $11::VARCHAR, $12::VARCHAR, $13::VARCHAR, $14::VARCHAR, $15::JSON, $16::VARCHAR, $17::VARCHAR, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::VARCHAR, $22::JSON, $23::JSON, $24::TIMESTAMP WITHOUT TIME ZONE, $25::JSON, $26::JSON, $27::JSON, $28::VARCHAR, $29::JSON, $30::JSON, $31::JSON, $32::VARCHAR, $33::VARCHAR, $34::JSON, $35::JSON, $36::JSON, $37::BIGINT, $38::VARCHAR, $39::BIGINT) RETURNING messages.id
+2024-04-11 01:52:45,414 INFO sqlalchemy.engine.Engine [generated in 0.00025s] (195576285, 15857, None, 'conversation', 1, 'dфывфыв', -1, None, -1, None, None, None, None, None, '"{\\"id\\": 195576285, \\"is_bot\\": false, \\"first_name\\": \\"Vitaliy\\", \\"last_name\\": \\"Lobanov\\", \\"username\\": \\"ya_schizotypic\\", \\ ... (49 characters truncated) ... ll, \\"added_to_attachment_menu\\": null, \\"can_join_groups\\": null, \\"can_read_all_group_messages\\": null, \\"supports_inline_queries\\": null}"', None, None, None, None, None, None, 'null', 'null', None, 'null', 'null', 'null', 'dфывфыв', 'null', 'null', 'null', 'dфывфыв', None, 'null', 'null', 'null', None, None, 195576285)
+2024-04-11 01:52:45,435 INFO sqlalchemy.engine.Engine COMMIT
+telegram_messaging.send_reconstructed_telegram_message_to_user ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,436 [0m
+engine.get_session ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,725 [0m
+dao.set_telegram_ids_for_stored_message ||| [36mDEBUG   [0m [37mD_logger [37m[44m2024-04-11 01:52:45,726 [0m
+2024-04-11 01:52:45,726 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2024-04-11 01:52:45,729 INFO sqlalchemy.engine.Engine SELECT messages.id, messages.user_id, messages.tg_message_id_for_receiver, messages.tg_message_id_for_sender, messages.message_source, messages.conversation_id, messages.text, messages.user_profile_version, messages.timestamp, messages.tier, messages.audio, messages.video, messages.sticker, messages.voice, messages.video_note, messages.from_user, messages.animation, messages.image, messages.photo, messages.document, messages.other_content, messages.author_signature, messages.caption, messages.caption_entities, messages.contact, messages.forward_date, messages.dice, messages.entities, messages.game, messages.html_text, messages.invoice, messages.location, messages.link_preview_options, messages.md_text, messages.media_group_id, messages.poll, messages.quote, messages.story, messages.original_sender_id, messages.original_sender_username, messages.sender_in_conversation_id 
+FROM messages 
+WHERE messages.id = $1::INTEGER
+2024-04-11 01:52:45,729 INFO sqlalchemy.engine.Engine [generated in 0.00019s] (24,)
+2024-04-11 01:52:45,735 INFO sqlalchemy.engine.Engine UPDATE messages SET tg_message_id_for_sender=$1::INTEGER WHERE messages.id = $2::INTEGER
+2024-04-11 01:52:45,735 INFO sqlalchemy.engine.Engine [generated in 0.00018s] (15858, 24)
+2024-04-11 01:52:45,737 INFO sqlalchemy.engine.Engine COMMIT
+2024-04-11 01:52:45,738 INFO sqlalchemy.engine.Engine COMMIT
+middleware.__call__ ||| [36mDEBUG   [0m [37mRemove message 15857 with text dфывфыв from the queue [37m[44m2024-04-11 01:52:45,738 [0m
+Received SIGINT signal
+Traceback (most recent call last):
+  File "/Users/vitaliy_lobanov/Documents/_develop/u-social-network/dd_test_u_bot_simple/app/main.py", line 35, in <module>
+    asyncio.run(main())
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+  File "/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+    return future.result()
+  File "/Users/vitaliy_lobanov/Documents/_develop/u-social-network/dd_test_u_bot_simple/app/main.py", line 30, in main
+    await dispatcher.start_polling(bot_instance)
+  File "/Users/vitaliy_lobanov/Documents/_develop/u-social-network/dd_test_u_bot_simple/bot-venv/lib/python3.10/site-packages/aiogram/dispatcher/dispatcher.py", line 556, in start_polling
+    await self.emit_shutdown(bot=bots[-1], **workflow_data)
+  File "/Users/vitaliy_lobanov/Documents/_develop/u-social-network/dd_test_u_bot_simple/bot-venv/lib/python3.10/site-packages/aiogram/dispatcher/router.py", line 255, in emit_shutdown
+    await self.shutdown.trigger(*args, **kwargs)
+  File "/Users/vitaliy_lobanov/Documents/_develop/u-social-network/dd_test_u_bot_simple/bot-venv/lib/python3.10/site-packages/aiogram/dispatcher/event/event.py", line 42, in trigger
+    await handler.call(*args, **kwargs)
+  File "/Users/vitaliy_lobanov/Documents/_develop/u-social-network/dd_test_u_bot_simple/bot-venv/lib/python3.10/site-packages/aiogram/dispatcher/event/handler.py", line 43, in call
+    return await wrapped()
+  File "/Users/vitaliy_lobanov/Documents/_develop/u-social-network/dd_test_u_bot_simple/bot-venv/lib/python3.10/site-packages/aiogram/fsm/middleware.py", line 110, in close
+    await self.storage.close()
+  File "/Users/vitaliy_lobanov/Documents/_develop/u-social-network/dd_test_u_bot_simple/bot-venv/lib/python3.10/site-packages/aiogram/fsm/storage/redis.py", line 141, in close
+    await self.redis.aclose(close_connection_pool=True)
+AttributeError: 'Redis' object has no attribute 'aclose'. Did you mean: 'close'?
