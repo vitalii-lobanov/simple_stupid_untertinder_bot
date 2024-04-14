@@ -103,5 +103,7 @@ def remove_downloads():
 
 
 if __name__ == "__main__":
-    asyncio.run(recreate_database(DATABASE_URI))
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(recreate_database(DATABASE_URI))
+    #asyncio.run(recreate_database(DATABASE_URI))
     remove_downloads()

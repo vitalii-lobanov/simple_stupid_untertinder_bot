@@ -7,7 +7,7 @@ SCRIPT_DIR=$(dirname "$0")
 cd "$SCRIPT_DIR"
 
 # Set environment variables
-export TELEGRAM_API_KEY="*************************0"
+export TELEGRAM_API_KEY="******"
 export PYTHONPATH="$(pwd)/app"
 export LOG_LEVEL="DEBUG"
 export FORWARD_DEBUG_MESSAGES_TO_USERS="TRUE"
@@ -17,4 +17,4 @@ WORKING_DIR=$(pwd)
 
 # Start the Python debugger with the current file
 # Replace 'your_script.py' with the script you want to debug
-python  "$WORKING_DIR/app/main.py" > bot.log 2>&1
+python  "$WORKING_DIR/app/utils/recreate_db.py"

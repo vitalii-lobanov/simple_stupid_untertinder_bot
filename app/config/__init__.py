@@ -8,9 +8,9 @@ BOT_TOKEN = os.getenv("TELEGRAM_API_KEY")
 #DATABASE_URI = f"sqlite:///{DATABASE_PATH}"
 # app/config/__init__.py
 #TODO: check security
-DATABASE_URI = "postgresql+asyncpg://pgsql_user:mb3L*nYTg7C!eBMC@localhost:5432/dating_bot_database"
+DATABASE_URI = os.getenv("POSTGRESQL_URL")
 
-# TODO: set correct values 
+# TODO: set correct values
 NEXT_PLEASE_WAITING_TIMEOUT = 10*60*60
 
 app_directory = os.path.dirname(os.path.abspath(__file__))
@@ -20,5 +20,3 @@ if not os.path.exists(downloads_path):
     os.makedirs(downloads_path)
 
 DOWNLOAD_PATH = downloads_path
-
-
